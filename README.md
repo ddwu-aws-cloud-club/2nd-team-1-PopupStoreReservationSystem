@@ -1,2 +1,3 @@
-# PopupStoreReservationSystem
+[DDWU ACC 2nd] Popup Store Reservation System
+=
 팝업스토어 예약 및 추천 서비스로, 팝업스토어 예약 오픈 시점에 트래픽이 몰리며 이를 대응할 수 있는 서비스이다. 사용자는 관심을 표한 프로그램을 기반으로 다른 팝업스토어 일정을 받아볼 수 있다.
