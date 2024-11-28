@@ -35,4 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### QueryDSL ###
+src/main/generated
+
 application-local.properties
