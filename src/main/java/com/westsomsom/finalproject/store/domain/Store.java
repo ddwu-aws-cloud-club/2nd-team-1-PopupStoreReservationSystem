@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 @Entity
@@ -20,9 +21,9 @@ public class Store {
 
     private String storeBio;
 
-    private Date startDate;
+    private LocalDate startDate;
 
-    private Date finDate;
+    private LocalDate finDate;
 
     @Column(length = 20)
     private String storeCategory;
@@ -31,7 +32,7 @@ public class Store {
     private String storeLoc;
 
     @Builder
-    public Store(String storeName, String storeBio, Date startDate, Date finDate, String storeCategory, String storeLoc) {
+    public Store(String storeName, String storeBio, LocalDate startDate, LocalDate finDate, String storeCategory, String storeLoc) {
         this.storeName = storeName;
         this.storeBio = storeBio;
         this.startDate = startDate;
