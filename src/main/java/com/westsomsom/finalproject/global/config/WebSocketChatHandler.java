@@ -1,13 +1,15 @@
 package com.westsomsom.finalproject.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.westsomsom.finalproject.dao.StoreRepository;
-import com.westsomsom.finalproject.dao.UserInfoRepository;
-import com.westsomsom.finalproject.dto.ChatMessageDto;
-import com.westsomsom.finalproject.domain.Message;
-import com.westsomsom.finalproject.dao.ChatRepository;
-import com.westsomsom.finalproject.domain.UserInfo;
-import com.westsomsom.finalproject.domain.Store;
+
+import com.westsomsom.finalproject.store.dao.StoreRepository;
+import com.westsomsom.finalproject.store.domain.Store;
+import com.westsomsom.finalproject.user.dao.UserInfoRepository;
+import com.westsomsom.finalproject.chat.dto.ChatMessageDto;
+import com.westsomsom.finalproject.chat.domain.Message;
+import com.westsomsom.finalproject.chat.dao.ChatRepository;
+import com.westsomsom.finalproject.user.domain.UserInfo;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
