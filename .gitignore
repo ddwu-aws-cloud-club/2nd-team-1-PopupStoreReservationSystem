@@ -39,4 +39,4 @@ out/
 ### QueryDSL ###
 src/main/generated
 
-application-local.properties
+application-local.yml
