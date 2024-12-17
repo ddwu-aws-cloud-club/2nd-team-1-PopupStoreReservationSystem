@@ -7,4 +7,6 @@ import org.springframework.data.domain.Pageable;
 
 public interface StoreCustomRepository {
     Page<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto, Pageable pageable);
+    Page<SearchResponseDto> searchStoreCategory(String category, Pageable pageable);
+
 }

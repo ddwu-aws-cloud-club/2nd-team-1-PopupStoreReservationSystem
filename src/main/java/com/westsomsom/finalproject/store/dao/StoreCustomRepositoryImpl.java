@@ -46,6 +46,23 @@ public class StoreCustomRepositoryImpl implements StoreCustomRepository{
         return PageableExecutionUtils.getPage(storeList, pageable, countQuery::fetchOne);
     }
 
+    public Page<SearchResponseDto> searchStoreCategory(String category, Pageable pageable) {
+        List<SearchResponseDto> storeList = queryFactory
+                .select(searchResponseDtoConstructor())
+                .from(store)
+                .where(storeCatagoryEq(category))
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+                .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory
+                .select(store.count())
+                .from(store)
+                .where(storeCatagoryEq(category));
+
+        return PageableExecutionUtils.getPage(storeList, pageable, countQuery::fetchOne);
+    }
+
     private ConstructorExpression<SearchResponseDto> searchResponseDtoConstructor() {
         return Projections.constructor(SearchResponseDto.class,
                 store.storeName,
@@ -71,5 +88,9 @@ public class StoreCustomRepositoryImpl implements StoreCustomRepository{
 
     private BooleanExpression storeLocContains(String storeLoc) {
         return storeLoc != null ? store.storeLoc.contains(storeLoc) : null;
+    }
+
+    private BooleanExpression storeCatagoryEq(String storeCategory) {
+        return storeCategory != null ? store.storeCategory.eq(storeCategory) : null;
     }
 }

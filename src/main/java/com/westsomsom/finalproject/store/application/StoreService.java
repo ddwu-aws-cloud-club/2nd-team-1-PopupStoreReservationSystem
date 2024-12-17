@@ -17,4 +17,8 @@ public class StoreService {
     public Page<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto, Pageable pageable) {
         return storeRepository.searchStore(searchRequestDto, pageable);
     }
+
+    public Page<SearchResponseDto> searchStoreCategory(String category, Pageable pageable) {
+        return storeRepository.searchStoreCategory(category, pageable);
+    }
 }

@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.logging.SimpleFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -38,6 +36,14 @@ public class StoreController {
 
         Page<SearchResponseDto> storeList = storeService.searchStore(searchRequestDto, PageRequest.of(page,10));
 
+        return ResponseEntity.ok().body(storeList.getContent());
+    }
+
+    @GetMapping("/api/search/category")
+    public ResponseEntity<?> searchStoreCategory(@RequestParam(value = "category", required = false) String category,
+                                                 @RequestParam(value = "page", defaultValue = "0") Integer page
+    ) {
+        Page<SearchResponseDto> storeList = storeService.searchStoreCategory(category, PageRequest.of(page,10));
         return ResponseEntity.ok().body(storeList.getContent());
     }
 }
