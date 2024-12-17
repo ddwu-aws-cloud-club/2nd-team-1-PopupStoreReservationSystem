@@ -12,7 +12,6 @@ import lombok.Setter;
 @Table(name = "UserInfo")
 public class UserInfo {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String userId;
 
     @Column(nullable = false, length = 30)
