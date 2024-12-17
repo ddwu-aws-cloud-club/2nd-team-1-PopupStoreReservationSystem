@@ -10,24 +10,28 @@ import java.time.LocalDate;
 @Entity
 @NoArgsConstructor
 @Getter
+@Table(name = "Store")
 public class Store {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer storeId;
+    private int storeId;
 
-    @Column(length = 20)
+    @Column(nullable = false, length = 20)
     private String storeName;
 
+    @Column(nullable = false, length = 100)
     private String storeBio;
 
+    @Column(nullable = false)
     private LocalDate startDate;
 
+    @Column(nullable = false)
     private LocalDate finDate;
 
-    @Column(length = 20)
+    @Column(nullable = false, length = 20)
     private String storeCategory;
 
-    @Column(length = 100)
+    @Column(nullable = false, length = 100)
     private String storeLoc;
 
     @Builder
