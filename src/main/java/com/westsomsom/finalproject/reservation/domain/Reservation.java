@@ -6,31 +6,43 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 
 @Entity
-@NoArgsConstructor
 @Getter
-@Table(name = "Reservation")
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
 public class Reservation {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int reservationId;
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    private int id;
+
+    @CreatedDate
+    private LocalDateTime reservationDate;
+
+    @Enumerated(EnumType.STRING)
+    private ReservationStatus status;
 
     @Column(nullable = false)
-    private int reservationNumber;
-
+    private String date;
     @Column(nullable = false)
-    private Date reservationDate;
+    private String timeSlot;
 
-    @Column(nullable = false, length = 20)
-    private String reservationState;
-
+    private String user;
+    /*
     @ManyToOne
-    @JoinColumn(name = "userId", nullable = false)
-    private UserInfo userInfo;
-
+    @JoinColumn(name = "user_id")
+    private UserInfo user;
+    */
     @ManyToOne
-    @JoinColumn(name = "storeId", nullable = false)
+    @JoinColumn(name = "store_id", referencedColumnName = "storeId", nullable = false)
     private Store store;
+
 }
