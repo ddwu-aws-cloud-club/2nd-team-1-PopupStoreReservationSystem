@@ -1,15 +1,28 @@
+logging:
+  level:
+    root: INFO
+    com.westsomsom.finalproject: DEBUG
 spring:
   application:
     name: finalproject
 
   jpa:
     database: mysql
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
 
   profiles:
     include: local
