@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,5 +28,9 @@ public class StoreService {
 
     public Page<SearchResponseDto> searchStoreCategory(String category, Pageable pageable) {
         return storeRepository.searchStoreCategory(category, pageable);
+    }
+
+    public Optional<Store> findById(int storeId){
+        return storeRepository.findById(storeId);
     }
 }

@@ -1,7 +1,6 @@
 package com.westsomsom.finalproject.reservation.domain;
 
 import com.westsomsom.finalproject.store.domain.Store;
-import com.westsomsom.finalproject.user.domain.UserInfo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
