@@ -2,6 +2,7 @@ package com.westsomsom.finalproject.reservation.api;
 
 import com.westsomsom.finalproject.reservation.application.ReservationService;
 import com.westsomsom.finalproject.reservation.domain.Reservation;
+import com.westsomsom.finalproject.reservation.dto.ReservationDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,24 +28,45 @@ public class ReservationController {
     //날짜+시간대 별 예약 가능 인원 10명으로 설정
 
     //예약 신청 - 실시간 대기열 시스템
-    //대기열에 사용자 추가
-    @PostMapping("/enter")
-    public void enterQueue(@RequestParam String userId,
-                           @RequestParam String date,
-                           @RequestParam String timeSlot) {
 
-        System.out.println("슬롯초기화");
-        String slotKey = "availableSlots:" + date + ":" + timeSlot;
+    //슬롯 초기화
+    @GetMapping
+    public void setSlot(@RequestParam String date,
+                        @RequestParam String timeSlot,
+                        @RequestParam int storeId){
+        log.info("슬롯초기화 10");
+        String slotKey = "availableSlots:"+ storeId + ":" + date + ":" + timeSlot;
         int availableSlots = 10;
         redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
-        reservationService.joinQueue(date, timeSlot, userId);
-        log.info("대기열에 추가되었습니다.");
+    }
+    //대기열에 사용자 추가
+    @PostMapping("/enter")
+    public void enterQueue(@RequestBody ReservationDto reservationDto) {
+        int storeId = reservationDto.getStoreId();
+        String date = reservationDto.getDate();
+        String timeSlot = reservationDto.getTimeSlot();
+
+        String slotKey = "availableSlots:"+ storeId + ":" + date + ":" + timeSlot;
+
+        if(!redisTemplate.hasKey(slotKey)){
+            log.info("슬롯초기화 30");
+            int availableSlots = 30;
+            redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
+        }
+
+
+        reservationService.joinQueue(reservationDto.getDate(), reservationDto.getTimeSlot(),reservationDto.getMemberId(),reservationDto.getStoreId());
         /*if(reservationService.checkReservationTime()) {
             log.info("예약이 가능합니다.");
             reservationService.joinQueue(date, timeSlot, userId);
             log.info("대기열에 추가되었습니다.");
         }else
             log.info("예약 시간이 아닙니다.");*/
+    }
+
+    @GetMapping("/queue-status")
+    public void getQueueStatus(@RequestBody ReservationDto reservationDto) {
+        reservationService.getQueueStatus(reservationDto.getDate(), reservationDto.getTimeSlot(), reservationDto.getMemberId(), reservationDto.getStoreId());
     }
 
     //예약 조회 -> 마이페이지-예약 목록-상세 조회
