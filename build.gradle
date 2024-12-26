@@ -41,6 +41,20 @@ dependencies {
 
 	// websocket
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// aws eventbridge scheduler
+	implementation(platform("software.amazon.awssdk:bom:2.29.39"))
+	implementation 'software.amazon.awssdk:eventbridge'
+	implementation 'software.amazon.awssdk:scheduler'
+	implementation 'software.amazon.awssdk:netty-nio-client'
+
+	// aws parameter store
+	implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.2.1")
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter'
+
+	// json
+	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 }
 
 tasks.named('test') {

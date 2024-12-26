@@ -2,5 +2,10 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
-    username: ${USER_NAME}
+    username: ${DB_NAME}
     password: ${DB_PASSWORD}
+
+custom:
+  scheduler:
+    targetArn: ${TARGET_ARN}
+    roleArn: ${ROLE_ARN}
