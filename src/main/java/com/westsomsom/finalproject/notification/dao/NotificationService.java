@@ -10,8 +10,11 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.scheduler.SchedulerAsyncClient;
 import software.amazon.awssdk.services.scheduler.model.*;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -36,25 +39,31 @@ public class NotificationService {
         // reservation 객체 찾기
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(RuntimeException::new);
 
-        // 알림 이메일 Dto 생성
-        NotificationDto notificationDto = NotificationDto.builder()
-                .storeName(reservation.getStore().getStoreName())
-                .date(reservation.getReservationDate().toString())
-                .toEmail(reservation.getUser())
-                .build();
-
-        // Dto를 Json 형식으로 변환
-        String input = createInput(notificationDto);
+        // 알림 데이터 생성
+        String input = createInput(reservation);
 
         // 스케줄 시간 설정 -> 현재 시간에서 10초 뒤로 설정
-        String scheduleTime = Instant.now().plusSeconds(10)
-                .atZone(java.time.ZoneId.of("UTC"))
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+        String scheduleTime = calculateScheduleTime(10, ChronoUnit.SECONDS);
 
-        // 스케줄 생성 요청 생성
-        CreateScheduleRequest request = buildCreateScheduleRequest(input, scheduleTime);
+        CompletableFuture<Boolean> scheduleResult = CreateAndRequestcreateSchedule(input, scheduleTime);
 
-        // 비동기 요청 처리
+        // 예약 시간이 현재 시간으로부터 24시간 이상 차이나는 경우
+        if(Duration.between(LocalDateTime.now(), reservation.getReservationDate()).toHours() > 24) {
+            // 24시간 뒤 실행되는 요청 생성
+            String delayedScheduleTime = calculateScheduleTime(24, ChronoUnit.HOURS);
+            CompletableFuture<Boolean> delayedResult = CreateAndRequestcreateSchedule(input, delayedScheduleTime);
+
+            return scheduleResult.thenCombine(delayedResult, (first, second) -> first && second);
+        }
+
+        return scheduleResult;
+    }
+
+    // 비동기 요청 생성 및 발송 메소드
+    private CompletableFuture<Boolean> CreateAndRequestcreateSchedule(String input, String scheduleTime) {
+        // 요청 생성
+        CreateScheduleRequest request = buildCreateSchedule(input, scheduleTime);
+        // 요청 발송
         return schedulerAsyncClient.createSchedule(request)
                 .thenApply(response -> true)
                 .exceptionally(ex -> {
@@ -66,7 +75,21 @@ public class NotificationService {
                 });
     }
 
-    private String createInput(NotificationDto notificationDto) {
+    // 요청 시간 생성 메소드
+    private String calculateScheduleTime(long amount, ChronoUnit unit) {
+        return Instant.now().plus(amount, unit)
+                .atZone(java.time.ZoneId.of("UTC"))
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+    }
+
+    // 요청 input 생성 메소드
+    private String createInput(Reservation reservation) {
+        NotificationDto notificationDto = NotificationDto.builder()
+                .storeName(reservation.getStore().getStoreName())
+                .date(reservation.getReservationDate().toString())
+                .toEmail(reservation.getUser())
+                .build();
+
         Map<String, Object> map = new HashMap<>();
         map.put("storeName", notificationDto.getStoreName());
         map.put("date", notificationDto.getDate());
@@ -75,7 +98,8 @@ public class NotificationService {
         return new JSONObject(map).toJSONString();
     }
 
-    private CreateScheduleRequest buildCreateScheduleRequest(String input, String scheduleTime) {
+    // 요청 생성 메소드
+    private CreateScheduleRequest buildCreateSchedule(String input, String scheduleTime) {
         Target target = Target.builder()
                 .arn(targetArn)
                 .roleArn(roleArn)
