@@ -2,5 +2,6 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
+#    url: ${DB_URL}/west_somsom_mysql  # 데이터베이스 이름을 명시적으로 추가
     username: ${USER_NAME}
     password: ${DB_PASSWORD}
