@@ -36,10 +36,12 @@ public class ReservationService {
     }
 
     //예약 요청이 들어오면 예약 가능 시간인지 확인
-    public boolean checkReservationTime() {
+    public boolean checkReservationTime(int storeId) {
         LocalDateTime now = LocalDateTime.now();
+        Store store = storeService.findById(storeId)
+                .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
         //해당 팝업 예약 오픈 시간과 비교하게 수정
-        if (now.getHour() < 9 || now.getHour() > 18) {
+        if (now.isBefore(store.getReservationStart()) || now.isAfter(store.getReservationFin())) {
             return false;
         }
         return true;
