@@ -16,7 +16,7 @@ spring:
         format_sql: false
   data:
     redis:
-      host: localhost
+      host: localhost #${aws.paramstore.west-somsom.redis.host}
       port: 6379
     lettuce:
       pool:
