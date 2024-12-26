@@ -29,6 +29,12 @@ public class ReservationController {
 
     //예약 신청 - 실시간 대기열 시스템
 
+
+    //크리스마스 팝업
+    //11/30~12/28 진행
+    //예약은 11/15 14:00~ 11/16 18:00 가능
+    //예약 가능일 체크
+
     //슬롯 초기화
     @GetMapping
     public void setSlot(@RequestParam String date,
@@ -49,19 +55,18 @@ public class ReservationController {
         String slotKey = "availableSlots:"+ storeId + ":" + date + ":" + timeSlot;
 
         if(!redisTemplate.hasKey(slotKey)){
+            if(!reservationService.checkReservationTime(storeId)){
+                log.info("예약 시간이 아닙니다.");
+                return;
+            }
             log.info("슬롯초기화 30");
             int availableSlots = 30;
             redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
         }
 
-
+        log.info("예약이 가능합니다.");
         reservationService.joinQueue(reservationDto.getDate(), reservationDto.getTimeSlot(),reservationDto.getMemberId(),reservationDto.getStoreId());
-        /*if(reservationService.checkReservationTime()) {
-            log.info("예약이 가능합니다.");
-            reservationService.joinQueue(date, timeSlot, userId);
-            log.info("대기열에 추가되었습니다.");
-        }else
-            log.info("예약 시간이 아닙니다.");*/
+        log.info("대기열에 추가되었습니다.");
     }
 
     @GetMapping("/queue-status")
