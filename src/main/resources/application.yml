@@ -5,6 +5,10 @@ logging:
 spring:
   application:
     name: finalproject
+  config:
+    import:
+      - 'aws-parameterstore:/west-somsom/rds/'
+      - 'aws-parameterstore:/west-somsom/arn/'
 
   jpa:
     database: mysql
