@@ -1,5 +1,6 @@
 package com.westsomsom.finalproject.reservation.application;
 
+import com.westsomsom.finalproject.notification.dao.NotificationService;
 import com.westsomsom.finalproject.reservation.dao.ReservationRepository;
 import com.westsomsom.finalproject.reservation.domain.Reservation;
 import com.westsomsom.finalproject.reservation.domain.ReservationStatus;
@@ -25,6 +26,7 @@ public class ReservationService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ReservationRepository reservationRepository;
     private final StoreService storeService;
+    private final NotificationService notificationService;
 
     private static final String REDIS_QUEUE_KEY = "reservationQueue|";
     private static final String UNIQUE_USERS_KEY = "uniqueUsers|";
@@ -154,17 +156,19 @@ public class ReservationService {
                     Store store = storeService.findById(storeId)
                             .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
 
-                    reservationRepository.save(Reservation.builder()
+                    long id = reservationRepository.save(Reservation.builder()
                             .date(date)
                             .timeSlot(timeSlot)
                             .user(nextUserId)
                             .status(ReservationStatus.COMPLETED)
                             .store(store)
-                            .build());
+                            .build()).getId();
 
                     availableSlots--;
                     redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
                     log.info("예약 완료: 사용자 {} 남은 슬롯: {}", nextUserId, availableSlots);
+
+                    notificationService.createScheduleAsync(id);
                 }
             else {
                 if (redisTemplate.opsForList().size(queueKey) > 0) {
