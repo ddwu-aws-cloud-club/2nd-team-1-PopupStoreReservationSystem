@@ -10,6 +10,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -35,16 +37,6 @@ public class ReservationController {
     //예약은 11/15 14:00~ 11/16 18:00 가능
     //예약 가능일 체크
 
-    //슬롯 초기화
-    @GetMapping
-    public void setSlot(@RequestParam String date,
-                        @RequestParam String timeSlot,
-                        @RequestParam int storeId){
-        log.info("슬롯초기화 10");
-        String slotKey = "availableSlots:"+ storeId + ":" + date + ":" + timeSlot;
-        int availableSlots = 10;
-        redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
-    }
     //대기열에 사용자 추가
     @PostMapping("/enter")
     public void enterQueue(@RequestBody ReservationDto reservationDto) {
@@ -52,26 +44,31 @@ public class ReservationController {
         String date = reservationDto.getDate();
         String timeSlot = reservationDto.getTimeSlot();
 
-        String slotKey = "availableSlots:"+ storeId + ":" + date + ":" + timeSlot;
+        String slotKey = "availableSlots|"+ storeId + "|" + date + "|" + timeSlot;
 
         if(!redisTemplate.hasKey(slotKey)){
             if(!reservationService.checkReservationTime(storeId)){
                 log.info("예약 시간이 아닙니다.");
                 return;
             }
-            log.info("슬롯초기화 30");
-            int availableSlots = 30;
+            log.info("슬롯초기화 10");
+            int availableSlots = 10;
             redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
         }
 
-        log.info("예약이 가능합니다.");
         reservationService.joinQueue(reservationDto.getDate(), reservationDto.getTimeSlot(),reservationDto.getMemberId(),reservationDto.getStoreId());
-        log.info("대기열에 추가되었습니다.");
     }
 
     @GetMapping("/queue-status")
     public void getQueueStatus(@RequestBody ReservationDto reservationDto) {
         reservationService.getQueueStatus(reservationDto.getDate(), reservationDto.getTimeSlot(), reservationDto.getMemberId(), reservationDto.getStoreId());
+    }
+
+    //예약 목록 조회
+    @GetMapping
+    public ResponseEntity<List<Reservation>> getReservationList(@RequestParam String user){
+        List<Reservation> reservationList = reservationService.getReservationList(user);
+        return ResponseEntity.ok(reservationList);
     }
 
     //예약 조회 -> 마이페이지-예약 목록-상세 조회
@@ -96,7 +93,7 @@ public class ReservationController {
         }
     }
 
-    //예약 취소(시작 시간 2시간 전까지만 가능)
+    //예약 취소(예약 가능 기간 동안 가능)
     @PutMapping("/{reservationId}")
     public ResponseEntity<Boolean> cancelReservation(@PathVariable Long reservationId){
         reservationService.cancelReservation(reservationId);
