@@ -9,7 +9,7 @@ spring:
     import:
       - 'aws-parameterstore:/west-somsom/rds/'
       - 'aws-parameterstore:/west-somsom/arn/'
-      - 'aws-parameterstroe:/west-somsom/redis/'
+      - 'aws-parameterstore:/west-somsom/redis/'
 
   jpa:
     database: mysql
