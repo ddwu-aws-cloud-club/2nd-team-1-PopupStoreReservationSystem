@@ -9,6 +9,7 @@ spring:
     import:
       - 'aws-parameterstore:/west-somsom/rds/'
       - 'aws-parameterstore:/west-somsom/arn/'
+      - 'aws-parameterstroe:/west-somsom/redis/'
 
   jpa:
     database: mysql
@@ -20,7 +21,7 @@ spring:
         format_sql: false
   data:
     redis:
-      host: localhost #${aws.paramstore.west-somsom.redis.host}
+      host: ${REDIS_HOST}
       port: 6379
     lettuce:
       pool:
