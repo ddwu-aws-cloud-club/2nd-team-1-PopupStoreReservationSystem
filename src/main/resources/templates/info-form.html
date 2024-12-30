@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>사용자 정보 입력</title>
+</head>
+<body>
+<h2>추가 정보 입력</h2>
+<form action="/kakao/update-info" method="post">
+    <label for="gender">성별:</label>
+    <select name="gender" id="gender">
+        <option value="0">남자</option>
+        <option value="1">여자</option>
+    </select>
+    <br>
+    <label for="ageGroup">연령대:</label>
+    <input type="text" id="ageGroup" name="ageGroup" placeholder="예: 20대">
+    <br>
+    <label for="residence">거주지:</label>
+    <input type="text" id="residence" name="residence" placeholder="예: 서울">
+    <br>
+    <button type="submit">정보 저장</button>
+</form>
+</body>
+</html>
