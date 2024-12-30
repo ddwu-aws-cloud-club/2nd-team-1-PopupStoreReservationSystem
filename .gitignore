@@ -40,4 +40,4 @@ out/
 src/main/generated
 
 application-local.yml
-application-kakao.properties
+
