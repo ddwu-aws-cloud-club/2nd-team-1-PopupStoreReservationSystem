@@ -30,11 +30,11 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: 6379
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 
   profiles:
     include: local
