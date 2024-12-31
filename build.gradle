@@ -59,7 +59,6 @@ dependencies {
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 
 	implementation 'org.json:json:20210307'
-	implementation 'com.googlecode.json-simple:json-simple:1.1'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	runtimeOnly 'org.springframework.boot:spring-boot-devtools'
 }
