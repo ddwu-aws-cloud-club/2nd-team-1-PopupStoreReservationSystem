@@ -26,6 +26,15 @@ spring:
     properties:
       hibernate:
         format_sql: false
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+  devtools:
+    livereload:
+      enabled: true
   data:
     redis:
       host: ${REDIS_HOST}
