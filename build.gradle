@@ -53,6 +53,7 @@ dependencies {
 	implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.2.1")
 	implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
 	implementation 'io.awspring.cloud:spring-cloud-aws-starter'
+	implementation 'software.amazon.awssdk:ssm'
 
 	// json
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
