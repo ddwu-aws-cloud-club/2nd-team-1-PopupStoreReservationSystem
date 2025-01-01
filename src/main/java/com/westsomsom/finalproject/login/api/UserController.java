@@ -34,10 +34,10 @@ public class UserController {
     @PutMapping("/api/user/{userId}")
     public ResponseEntity<MsgEntity> updateUserInfo(
             @PathVariable("userId") String userId,
-            @RequestParam("phone") String phone,
-            @RequestParam("gender") String gender,
-            @RequestParam("age") int age,
-            @RequestParam("cstAddrNo") String cstAddrNo) {
+            @RequestParam(value = "phone", required = false) String phone,
+            @RequestParam(value = "gender", required = false) String gender,
+            @RequestParam(value = "age", required = false) Integer age,
+            @RequestParam(value = "cstAddrNo", required = false) String cstAddrNo) {
 
         UserInfo userInfo = userInfoRepository.findByUserId(userId);
         if (userInfo == null) {
@@ -45,12 +45,25 @@ public class UserController {
                     .body(new MsgEntity("User not found", null));
         }
 
-        // 추가 정보를 받아서 UserInfo 객체에 저장
-        userInfo.setPhone(phone);
-        userInfo.setGender(gender);
-        userInfo.setAge(age);
-        userInfo.setCstAddrNo(cstAddrNo);
+        // userId 수정 방지
+        if (!userInfo.getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new MsgEntity("UserId cannot be changed", null));
+        }
 
+        // 필요한 값만 업데이트
+        if (phone != null) {
+            userInfo.setPhone(phone);
+        }
+        if (gender != null) {
+            userInfo.setGender(gender);
+        }
+        if (age != null) {
+            userInfo.setAge(age);
+        }
+        if (cstAddrNo != null) {
+            userInfo.setCstAddrNo(cstAddrNo);
+        }
         userInfoRepository.save(userInfo);
 
         return ResponseEntity.ok(new MsgEntity("User information updated successfully", userInfo));

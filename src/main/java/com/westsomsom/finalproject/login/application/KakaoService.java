@@ -105,7 +105,7 @@ public class KakaoService {
         String username = String.valueOf(profile.get("nickname"));
 
         UserInfo userInfo = new UserInfo();
-        userInfo.setUserId(userId);
+        //userInfo.setUserId(userId); //Id값은 바뀌면 안됨
         userInfo.setEmail(email);
         userInfo.setUsername(username);
         userInfo.setPhone(""); // Default as empty
