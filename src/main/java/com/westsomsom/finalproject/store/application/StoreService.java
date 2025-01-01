@@ -33,9 +33,4 @@ public class StoreService {
     public Optional<Store> findById(int storeId){
         return storeRepository.findById(storeId);
     }
-
-    // StoreRepository를 사용해 storeId로 조회
-    public Optional<Store> getStore(int storeId) {
-        return storeRepository.findById(storeId);
-    }
 }

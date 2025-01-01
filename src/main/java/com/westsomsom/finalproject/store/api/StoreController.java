@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -58,14 +59,14 @@ public class StoreController {
     }
 
     //팝업 스토어 상세정보
-    @GetMapping("/api/home/{storeId}")
-    public String getStoreDetails(@PathVariable int storeId, Model model) {
-        // StoreService를 호출하여 storeId에 해당하는 정보를 가져옴
-        Store store = storeService.getStore(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("Store not found with id: " + storeId));
-        model.addAttribute("Store", store);
+    @GetMapping("/api/store/{storeId}")
+    public ResponseEntity<Store> getStoreById(@PathVariable("storeId") int storeId) {
+        Optional<Store> store = storeService.findById(storeId);
 
-        return "redirect:/store/details";
+        if (store.isPresent()) {
+            return ResponseEntity.ok(store.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
-
 }
