@@ -1,8 +1,8 @@
 package com.westsomsom.finalproject.login.api;
 
 import com.westsomsom.finalproject.login.MsgEntity;
-import com.westsomsom.finalproject.login.dao.MemberRepository;
-import com.westsomsom.finalproject.login.domain.Member;
+import com.westsomsom.finalproject.user.dao.UserInfoRepository;
+import com.westsomsom.finalproject.user.domain.UserInfo;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,47 +15,41 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequiredArgsConstructor
 public class UserController {
-    private final MemberRepository memberRepository; // 유저정보 수정에 필요해서 추가
+    private final UserInfoRepository userInfoRepository;
 
     @GetMapping("/mypage")
     public String getMyPage(HttpSession session, Model model) {
-        // 세션에서 로그인한 사용자 정보 가져오기
-        Member member = (Member) session.getAttribute("member");
-        if (member == null) {
+        UserInfo userInfo = (UserInfo) session.getAttribute("userInfo");
+        if (userInfo == null) {
             model.addAttribute("error", "No logged-in user found");
-            return "error"; // 에러 페이지로 이동
+            return "error";
         }
 
-        // 사용자 정보를 모델에 추가
-        model.addAttribute("member", member);
-        return "mypage"; // 마이페이지 뷰로 이동
+        model.addAttribute("userInfo", userInfo);
+        return "mypage";
     }
 
-    //마이페이지 유저정보 수정 (카카오에서 가져온 정보를 제외한 성별, 연령대, 거주지에 대한 내용에 대해서만 수정가능)
     @PutMapping("/mypage/update")
     public ResponseEntity<MsgEntity> updateUserInfo(
-            @RequestParam("gender") Integer gender,
-            @RequestParam("ageGroup") String ageGroup,
-            @RequestParam("residence") String residence,
+            @RequestParam("phone") String phone,
+            @RequestParam("gender") String gender,
+            @RequestParam("age") int age,
+            @RequestParam("cstAddrNo") String cstAddrNo,
             HttpSession session) {
 
-        // Get 로그인된 유저의 세션
-        Member member = (Member) session.getAttribute("member");
-        if (member == null) {
+        UserInfo userInfo = (UserInfo) session.getAttribute("userInfo");
+        if (userInfo == null) {
             return ResponseEntity.badRequest().body(new MsgEntity("No logged-in user found", null));
         }
+        userInfo.setPhone(phone);
+        userInfo.setGender(gender);
+        userInfo.setAge(age);
+        userInfo.setCstAddrNo(cstAddrNo);
 
-        // 유저정보 업데이트
-        member.setGender(gender);
-        member.setAgeGroup(ageGroup);
-        member.setResidence(residence);
+        userInfoRepository.save(userInfo);
 
-        // 변경된 내용 데이터베이스에 저장
-        memberRepository.save(member);
+        session.setAttribute("userInfo", userInfo);
 
-        // 세션 객체 업데이트
-        session.setAttribute("member", member);
-
-        return ResponseEntity.ok(new MsgEntity("User information updated successfully", member));
+        return ResponseEntity.ok(new MsgEntity("User information updated successfully", userInfo));
     }
 }
