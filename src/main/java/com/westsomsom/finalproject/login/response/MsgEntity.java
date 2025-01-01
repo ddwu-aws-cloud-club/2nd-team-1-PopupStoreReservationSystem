@@ -1,4 +1,4 @@
-package com.westsomsom.finalproject.login;
+package com.westsomsom.finalproject.login.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
