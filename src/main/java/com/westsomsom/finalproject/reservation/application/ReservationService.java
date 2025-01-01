@@ -10,6 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -134,49 +136,86 @@ public class ReservationService {
     //예약 처리 스케줄러
     @Scheduled(fixedRate = 5000) // 5초마다 실행
     public void processQueue() {
-        Set<String> availableSlotsKeys = redisTemplate.keys(AVAILABLE_SLOTS_KEY + "*");
-        if (availableSlotsKeys == null || availableSlotsKeys.isEmpty()) {
-            return;
+        ScanOptions scanOptions = ScanOptions.scanOptions()
+                .match(AVAILABLE_SLOTS_KEY + "*") // 패턴에 맞는 키 검색
+                .count(1000) // 한 번에 검색할 키 개수
+                .build();
+
+        try (Cursor<byte[]> cursor = redisTemplate.executeWithStickyConnection(
+                redisConnection -> redisConnection.scan(scanOptions)
+        )) {
+            if (cursor == null) {
+                log.warn("No keys found for pattern: {}", AVAILABLE_SLOTS_KEY + "*");
+                return;
+            }
+
+            while (cursor.hasNext()) {
+                String slotKey = new String(cursor.next()); // 키를 문자열로 변환
+                processSlotKey(slotKey); // 개별 키 처리
+            }
+        } catch (Exception e) {
+            log.error("Error during Redis SCAN operation", e);
         }
+    }
 
-        for (String slotKey : availableSlotsKeys) {
+    private void processSlotKey(String slotKey) {
+        try {
+            // 키에서 storeId, date, timeSlot 추출
             String[] keyParts = slotKey.split("\\|");
-
             int storeId = Integer.parseInt(keyParts[1]);
             String date = keyParts[2];
             String timeSlot = keyParts[3];
+
+            // 관련 queueKey 계산
             String queueKey = slotKey.replace(AVAILABLE_SLOTS_KEY, REDIS_QUEUE_KEY);
+
+            // 현재 가능한 슬롯 수 확인
             int availableSlots = Integer.parseInt((String) redisTemplate.opsForValue().get(slotKey));
 
-            if(availableSlots > 0)
-                while (availableSlots > 0) {
-                    String nextUserId = (String) redisTemplate.opsForList().leftPop(queueKey);
-                    if (nextUserId == null) break;
+            if (availableSlots > 0) {
+                // 예약 처리
+                processReservations(storeId, date, timeSlot, queueKey, slotKey, availableSlots);
+            } else {
+                // 대기열에서 사용자 처리
+                processWaitingQueue(queueKey);
+            }
+        } catch (Exception e) {
+            log.error("Error processing slot key: {}", slotKey, e);
+        }
+    }
 
-                    Store store = storeService.findById(storeId)
-                            .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
+    private void processReservations(int storeId, String date, String timeSlot, String queueKey, String slotKey, int availableSlots) {
+        while (availableSlots > 0) {
+            String nextUserId = (String) redisTemplate.opsForList().leftPop(queueKey);
+            if (nextUserId == null) break;
 
-                    long id = reservationRepository.save(Reservation.builder()
-                            .date(date)
-                            .timeSlot(timeSlot)
-                            .user(nextUserId)
-                            .status(ReservationStatus.COMPLETED)
-                            .store(store)
-                            .build()).getId();
+            // Store 정보 조회
+            Store store = storeService.findById(storeId)
+                    .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
 
-                    availableSlots--;
-                    redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
-                    log.info("예약 완료: 사용자 {} 남은 슬롯: {}", nextUserId, availableSlots);
+            // 예약 생성 및 DB 저장
+            long id = reservationRepository.save(Reservation.builder()
+                    .date(date)
+                    .timeSlot(timeSlot)
+                    .user(nextUserId)
+                    .status(ReservationStatus.COMPLETED)
+                    .store(store)
+                    .build()).getId();
 
-                    notificationService.createScheduleAsync(id);
-                }
-            else {
-                if (redisTemplate.opsForList().size(queueKey) > 0) {
-                    String nextUserId = (String) redisTemplate.opsForList().leftPop(queueKey);
-                    if (nextUserId != null) {
-                        log.info("예약이 마감되었습니다: 사용자 {}", nextUserId);
-                    }
-                }
+            availableSlots--;
+            redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
+            log.info("예약 완료: 사용자 {} 남은 슬롯: {}", nextUserId, availableSlots);
+
+            // 알림 전송
+            notificationService.createScheduleAsync(id);
+        }
+    }
+
+    private void processWaitingQueue(String queueKey) {
+        if (redisTemplate.opsForList().size(queueKey) > 0) {
+            String nextUserId = (String) redisTemplate.opsForList().leftPop(queueKey);
+            if (nextUserId != null) {
+                log.info("예약이 마감되었습니다: 사용자 {}", nextUserId);
             }
         }
     }

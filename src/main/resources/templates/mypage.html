@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>마이페이지</title>
+</head>
+<body>
+<h2>마이페이지</h2>
+<div>
+    <p>사용자 이름: <span th:text="${member.username}"></span></p>
+    <p>이메일: <span th:text="${member.email}"></span></p>
+    <p>성별: <span th:text="${member.gender == 0 ? '남자' : '여자'}"></span></p>
+    <p>연령대: <span th:text="${member.ageGroup}"></span></p>
+    <p>거주지: <span th:text="${member.residence}"></span></p>
+</div>
+<!-- Update Form -->
+<h3>정보 수정</h3>
+<form id="updateForm">
+    <label for="gender">성별:</label>
+    <select name="gender" id="gender">
+        <option value="0" th:selected="${member.gender == 0}">남자</option>
+        <option value="1" th:selected="${member.gender == 1}">여자</option>
+    </select>
+    <br>
+    <label for="ageGroup">연령대:</label>
+    <input type="text" id="ageGroup" name="ageGroup" value="" th:value="${member.ageGroup}">
+    <br>
+    <label for="residence">거주지:</label>
+    <input type="text" id="residence" name="residence" value="" th:value="${member.residence}">
+    <br>
+    <button type="button" onclick="updateUserInfo()">정보 수정</button>
+</form>
+<script>
+    function updateUserInfo() {
+        const formData = new FormData(document.getElementById('updateForm'));
+
+        fetch('/mypage/update', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.msg === "User information updated successfully") {
+                    alert('정보가 성공적으로 업데이트되었습니다.');
+                    location.reload();
+                } else {
+                    alert('업데이트 실패: ' + data.msg);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating user info:', error);
+                alert('서버 오류로 인해 업데이트에 실패했습니다.');
+            });
+    }
+</script>
+<p><a th:href="@{/}">홈으로 돌아가기</a></p>
+</body>
+</html>

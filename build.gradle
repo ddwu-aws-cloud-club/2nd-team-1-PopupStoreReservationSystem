@@ -53,9 +53,14 @@ dependencies {
 	implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.2.1")
 	implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
 	implementation 'io.awspring.cloud:spring-cloud-aws-starter'
+	implementation 'software.amazon.awssdk:ssm'
 
 	// json
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+
+	implementation 'org.json:json:20210307'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	runtimeOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
 tasks.named('test') {
