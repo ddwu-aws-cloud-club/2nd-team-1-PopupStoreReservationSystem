@@ -53,7 +53,8 @@ public class ReservationService {
     }
 
     //몇번째인지 확인
-    public void joinQueue(String date, String timeSlot, String memberId, int storeId) {
+    public String joinQueue(String date, String timeSlot, String memberId, int storeId) {
+        String res="";
         String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
         String uniqueUsersKey = UNIQUE_USERS_KEY + storeId + "|" + date + "|" + timeSlot;
         String slotKey = AVAILABLE_SLOTS_KEY + storeId + "|" + date + "|" + timeSlot;
@@ -61,29 +62,33 @@ public class ReservationService {
         // Redis Set에서 사용자 중복 확인
         Boolean isAlreadyReserved = redisTemplate.opsForSet().isMember(uniqueUsersKey, memberId);
         if (Boolean.TRUE.equals(isAlreadyReserved)) {
+            res = "사용자가 이미 예약 요청을 보냈습니다: "+memberId;
             log.info("사용자가 이미 예약 요청을 보냈습니다: {}", memberId);
-            return;
+            return res;
         }
 
         // 대기열 중복 확인
         List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
         if (queue != null && queue.contains(memberId)) {
+            res = "사용자가 이미 대기열에 있습니다: "+ memberId;
             log.info("사용자가 이미 대기열에 있습니다: {}", memberId);
-            return;
+            return res;
         }
 
         // 대기열 크기 제한 확인
         Long queueSize = redisTemplate.opsForList().size(queueKey);
         int maxQueueSize = 500; // 대기열 최대 크기
         if (queueSize != null && queueSize >= maxQueueSize) {
+            res = "대기열이 가득 찼습니다.";
             log.info("대기열이 가득 찼습니다.");
-            return;
+            return res;
         }
 
         String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
         int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
         if (availableSlots > 0) {
             redisTemplate.opsForSet().add(uniqueUsersKey, memberId);
+            res+="예약 성공";
         }
 
         // Redis List 사용. 대기열에 사용자 추가
@@ -109,23 +114,25 @@ public class ReservationService {
         // 대기열에서 사용자 순서
         //Long position = redisTemplate.opsForList().size(queueKey);
         log.info("대기열에 추가되었습니다. 사용자 {} 현재 순번: {}", memberId, queue.size()+1);
+        res+="대기열에 추가되었습니다. 사용자 "+memberId+" 현재 순번: "+(queue.size()+1);
+        return res;
     }
 
     //대기열 상태 확인
-    public void getQueueStatus(String date, String timeSlot, String memberId, int storeId) {
+    public String getQueueStatus(String date, String timeSlot, String memberId, int storeId) {
         String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
 
         List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
 
         if (queue == null || !queue.contains(memberId)) {
             //log.info("대기열에 없습니다.");
-            return;
+            return null;
         }
         int position = queue.indexOf(memberId);
         int peopleBehind = queue.size() - position - 1;
 
         log.info("사용자 {}는 현재 {}번째입니다. 뒤에 {}명 있습니다.", memberId, position+1, peopleBehind);
-
+        return "사용자 "+memberId+"는 현재 "+(position+1)+"번째입니다. 뒤에 "+peopleBehind+"명 있습니다.";
         /*return Map.of(
                 "currentPosition", position + 1,
                 "peopleBehind", peopleBehind,
