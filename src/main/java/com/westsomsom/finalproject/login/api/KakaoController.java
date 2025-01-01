@@ -2,9 +2,9 @@ package com.westsomsom.finalproject.login.api;
 
 import com.westsomsom.finalproject.login.MsgEntity;
 import com.westsomsom.finalproject.login.application.KakaoService;
-import com.westsomsom.finalproject.login.dao.MemberRepository;
-import com.westsomsom.finalproject.login.domain.Member;
 import com.westsomsom.finalproject.login.dto.KakaoDTO;
+import com.westsomsom.finalproject.user.dao.UserInfoRepository;
+import com.westsomsom.finalproject.user.domain.UserInfo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -16,47 +16,42 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("kakao")
 public class KakaoController {
     private final KakaoService kakaoService;
+    private final UserInfoRepository userInfoRepository;
 
     @GetMapping("/callback")
-    public ResponseEntity<MsgEntity> callback(HttpServletRequest request) throws Exception{
+    public ResponseEntity<MsgEntity> callback(HttpServletRequest request) throws Exception {
         KakaoDTO kakaoInfo = kakaoService.getKakaoInfo(request.getParameter("code"));
 
         return ResponseEntity.ok()
                 .body(new MsgEntity("Success", kakaoInfo));
-        //HTTP응답을 생성, Ok응답을 반환하며, 본문(body)로 MsgEntity 객체를 담고있음
     }
-
-    //여기부터 새로운 코드 post를 위한 코드
-    private final MemberRepository memberRepository;
 
     @PostMapping("/update-info")
     public ResponseEntity<MsgEntity> updateUserInfo(
-            @RequestParam("gender") Integer gender,
-            @RequestParam("ageGroup") String ageGroup,
-            @RequestParam("residence") String residence,
+            @RequestParam("phone") String phone,
+            @RequestParam("gender") String gender,
+            @RequestParam("age") int age,
+            @RequestParam("cstAddrNo") String cstAddrNo,
             HttpSession session) {
 
-        // 세션에서 로그인한 사용자 정보 가져오기
-        Member member = (Member) session.getAttribute("member");
-        if (member == null) {
+        UserInfo userInfo = (UserInfo) session.getAttribute("userInfo");
+        if (userInfo == null) {
             return ResponseEntity.badRequest().body(new MsgEntity("No logged-in user found", null));
         }
 
-        // DB에서 실제 사용자 엔티티 조회
-        Member sessionMember = memberRepository.findById(member.getMember_id())
-                .orElseThrow(() -> new IllegalStateException("User not found in database"));
+        UserInfo sessionUserInfo = userInfoRepository.findByUserId(userInfo.getUserId());
+        if (sessionUserInfo == null) {
+            throw new IllegalStateException("User not found in database");
+        }
+        sessionUserInfo.setPhone(phone);
+        sessionUserInfo.setGender(gender);
+        sessionUserInfo.setAge(age);
+        sessionUserInfo.setCstAddrNo(cstAddrNo);
 
-        // 사용자 정보 업데이트
-        member.setGender(gender);
-        member.setAgeGroup(ageGroup);
-        member.setResidence(residence);
+        userInfoRepository.save(sessionUserInfo);
 
-        //변경사항 저장
-        memberRepository.save(member);
+        session.setAttribute("userInfo", sessionUserInfo);
 
-        // 세션 정보도 업데이트
-        session.setAttribute("member", sessionMember);
-
-        return ResponseEntity.ok(new MsgEntity("User info updated successfully", member));
+        return ResponseEntity.ok(new MsgEntity("User info updated successfully", sessionUserInfo));
     }
 }
