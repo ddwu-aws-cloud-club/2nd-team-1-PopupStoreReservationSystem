@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -54,4 +56,16 @@ public class StoreController {
         Page<SearchResponseDto> storeList = storeService.searchStoreCategory(category, PageRequest.of(page,10));
         return ResponseEntity.ok().body(storeList.getContent());
     }
+
+    //팝업 스토어 상세정보
+    @GetMapping("/api/home/{storeId}")
+    public String getStoreDetails(@PathVariable int storeId, Model model) {
+        // StoreService를 호출하여 storeId에 해당하는 정보를 가져옴
+        Store store = storeService.getStore(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("Store not found with id: " + storeId));
+        model.addAttribute("Store", store);
+
+        return "redirect:/store/details";
+    }
+
 }
