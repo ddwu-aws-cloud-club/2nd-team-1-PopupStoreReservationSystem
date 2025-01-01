@@ -61,8 +61,12 @@ public class ReservationController {
     }
 
     @GetMapping("/queue-status")
-    public ResponseEntity<String> getQueueStatus(@RequestBody ReservationDto reservationDto) {
-        String res = reservationService.getQueueStatus(reservationDto.getDate(), reservationDto.getTimeSlot(), reservationDto.getMemberId(), reservationDto.getStoreId());
+    public ResponseEntity<String> getQueueStatus(
+                                                 @RequestParam String memberId,
+                                                 @RequestParam String date,
+                                                 @RequestParam String timeSlot,
+                                                 @RequestParam int storeId) {
+        String res = reservationService.getQueueStatus(date, timeSlot, memberId, storeId);
         return ResponseEntity.ok(res);
     }
 

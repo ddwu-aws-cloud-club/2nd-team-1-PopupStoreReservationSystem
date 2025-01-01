@@ -114,7 +114,7 @@ public class ReservationService {
         // 대기열에서 사용자 순서
         //Long position = redisTemplate.opsForList().size(queueKey);
         log.info("대기열에 추가되었습니다. 사용자 {} 현재 순번: {}", memberId, queue.size()+1);
-        res+="대기열에 추가되었습니다. 사용자 "+memberId+" 현재 순번: "+(queue.size()+1);
+        res+=" 대기열에 추가되었습니다. 사용자 "+memberId+" 현재 순번: "+(queue.size()+1);
         return res;
     }
 
@@ -126,7 +126,7 @@ public class ReservationService {
 
         if (queue == null || !queue.contains(memberId)) {
             //log.info("대기열에 없습니다.");
-            return null;
+            return "아직 대기열에 없습니다.";
         }
         int position = queue.indexOf(memberId);
         int peopleBehind = queue.size() - position - 1;
