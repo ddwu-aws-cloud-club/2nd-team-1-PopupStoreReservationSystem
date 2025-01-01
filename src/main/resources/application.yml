@@ -13,9 +13,9 @@ spring:
       - 'aws-parameterstore:/west-somsom/kakao/'
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL}
+    # url: ${DB_URL}
     username: ${DB_NAME}
-    #    url: ${DB_URL}/west_somsom_mysql  # 데이터베이스 이름을 명시적으로 추가
+    url: ${DB_URL}/west_somsom_mysql  # 데이터베이스 이름을 명시적으로 추가
     password: ${DB_PASSWORD}
 
   jpa:
@@ -64,8 +64,7 @@ kakao:
   client:
     id: ${KAKAO_ID}
     secret: ${KAKAO_SECRET}
-  redirect:
-    url: ${KAKAO_URL}
+  redirect:    url: ${KAKAO_URL}
 management:
   endpoints:
     web:
