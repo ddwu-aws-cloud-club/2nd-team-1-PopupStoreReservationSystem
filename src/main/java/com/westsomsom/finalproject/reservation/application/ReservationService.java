@@ -1,6 +1,6 @@
 package com.westsomsom.finalproject.reservation.application;
 
-import com.westsomsom.finalproject.notification.dao.NotificationService;
+import com.westsomsom.finalproject.notification.application.NotificationService;
 import com.westsomsom.finalproject.reservation.dao.ReservationRepository;
 import com.westsomsom.finalproject.reservation.domain.Reservation;
 import com.westsomsom.finalproject.reservation.domain.ReservationStatus;

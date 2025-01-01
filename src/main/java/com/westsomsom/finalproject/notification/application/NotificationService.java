@@ -1,4 +1,4 @@
-package com.westsomsom.finalproject.notification.dao;
+package com.westsomsom.finalproject.notification.application;
 
 import com.westsomsom.finalproject.notification.dto.NotificationDto;
 import com.westsomsom.finalproject.reservation.dao.ReservationRepository;
@@ -37,7 +37,7 @@ public class NotificationService {
 
     public CompletableFuture<Boolean> createScheduleAsync(Long reservationId) {
         // reservation 객체 찾기
-        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(RuntimeException::new);
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(IllegalArgumentException::new);
 
         // 알림 데이터 생성
         String input = createInput(reservation);
