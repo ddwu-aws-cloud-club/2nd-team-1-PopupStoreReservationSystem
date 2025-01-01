@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Builder
 @Data
-public class KakaoDTO {
+public class KakaoDto {
     private long id;
     private String email;
     private String nickname;

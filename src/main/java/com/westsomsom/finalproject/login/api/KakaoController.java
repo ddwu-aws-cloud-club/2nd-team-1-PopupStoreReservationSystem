@@ -1,8 +1,8 @@
 package com.westsomsom.finalproject.login.api;
 
-import com.westsomsom.finalproject.login.MsgEntity;
+import com.westsomsom.finalproject.login.response.MsgEntity;
 import com.westsomsom.finalproject.login.application.KakaoService;
-import com.westsomsom.finalproject.login.dto.KakaoDTO;
+import com.westsomsom.finalproject.login.dto.KakaoDto;
 import com.westsomsom.finalproject.user.dao.UserInfoRepository;
 import com.westsomsom.finalproject.user.domain.UserInfo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +20,7 @@ public class KakaoController {
 
     @GetMapping("/callback")
     public ResponseEntity<MsgEntity> callback(HttpServletRequest request) throws Exception {
-        KakaoDTO kakaoInfo = kakaoService.getKakaoInfo(request.getParameter("code"));
+        KakaoDto kakaoInfo = kakaoService.getKakaoInfo(request.getParameter("code"));
 
         return ResponseEntity.ok()
                 .body(new MsgEntity("Success", kakaoInfo));

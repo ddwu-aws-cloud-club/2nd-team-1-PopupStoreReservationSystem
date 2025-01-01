@@ -1,4 +1,4 @@
-package com.westsomsom.finalproject.login;
+package com.westsomsom.finalproject.login.api;
 
 import com.westsomsom.finalproject.login.application.KakaoService;
 import lombok.RequiredArgsConstructor;

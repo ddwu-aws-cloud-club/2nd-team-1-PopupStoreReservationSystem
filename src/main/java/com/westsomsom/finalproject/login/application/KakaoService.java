@@ -1,6 +1,6 @@
 package com.westsomsom.finalproject.login.application;
 
-import com.westsomsom.finalproject.login.dto.KakaoDTO;
+import com.westsomsom.finalproject.login.dto.KakaoDto;
 import com.westsomsom.finalproject.user.dao.UserInfoRepository;
 import com.westsomsom.finalproject.user.domain.UserInfo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -45,7 +44,7 @@ public class KakaoService {
                 + "&response_type=code";
     }
 
-    public KakaoDTO getKakaoInfo(String code) throws Exception {
+    public KakaoDto getKakaoInfo(String code) throws Exception {
         if (code == null) throw new Exception("Failed get authorization code");
 
         String accessToken = "";
@@ -82,7 +81,7 @@ public class KakaoService {
         return getUserInfoWithToken(accessToken);
     }
 
-    private KakaoDTO getUserInfoWithToken(String accessToken) throws Exception {
+    private KakaoDto getUserInfoWithToken(String accessToken) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
         headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
@@ -120,7 +119,7 @@ public class KakaoService {
         HttpSession session = request.getSession();
         session.setAttribute("userInfo", userInfo);
 
-        return KakaoDTO.builder()
+        return KakaoDto.builder()
                 .id(Long.parseLong(userId))
                 .email(email)
                 .nickname(username).build();

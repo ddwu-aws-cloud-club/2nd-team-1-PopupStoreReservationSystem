@@ -1,6 +1,6 @@
 package com.westsomsom.finalproject.login.api;
 
-import com.westsomsom.finalproject.login.MsgEntity;
+import com.westsomsom.finalproject.login.response.MsgEntity;
 import com.westsomsom.finalproject.user.dao.UserInfoRepository;
 import com.westsomsom.finalproject.user.domain.UserInfo;
 import jakarta.servlet.http.HttpSession;
