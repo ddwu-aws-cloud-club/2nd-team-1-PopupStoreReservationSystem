@@ -39,7 +39,7 @@ public class ReservationController {
 
     //대기열에 사용자 추가
     @PostMapping("/enter")
-    public void enterQueue(@RequestBody ReservationDto reservationDto) {
+    public ResponseEntity<String> enterQueue(@RequestBody ReservationDto reservationDto) {
         int storeId = reservationDto.getStoreId();
         String date = reservationDto.getDate();
         String timeSlot = reservationDto.getTimeSlot();
@@ -49,19 +49,21 @@ public class ReservationController {
         if(!redisTemplate.hasKey(slotKey)){
             if(!reservationService.checkReservationTime(storeId)){
                 log.info("예약 시간이 아닙니다.");
-                return;
+                return ResponseEntity.ok("예약 시간이 아닙니다.");
             }
             log.info("슬롯초기화 10");
             int availableSlots = 10;
             redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
         }
 
-        reservationService.joinQueue(reservationDto.getDate(), reservationDto.getTimeSlot(),reservationDto.getMemberId(),reservationDto.getStoreId());
+        String res = reservationService.joinQueue(reservationDto.getDate(), reservationDto.getTimeSlot(),reservationDto.getMemberId(),reservationDto.getStoreId());
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/queue-status")
-    public void getQueueStatus(@RequestBody ReservationDto reservationDto) {
-        reservationService.getQueueStatus(reservationDto.getDate(), reservationDto.getTimeSlot(), reservationDto.getMemberId(), reservationDto.getStoreId());
+    public ResponseEntity<String> getQueueStatus(@RequestBody ReservationDto reservationDto) {
+        String res = reservationService.getQueueStatus(reservationDto.getDate(), reservationDto.getTimeSlot(), reservationDto.getMemberId(), reservationDto.getStoreId());
+        return ResponseEntity.ok(res);
     }
 
     //예약 목록 조회
