@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
+//import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -52,9 +52,9 @@ public class ReservationService {
         return true;
     }
 
-    //몇번째인지 확인
+    //예약 요청 처리
     public String joinQueue(String date, String timeSlot, String memberId, int storeId) {
-        String res="";
+        String res = "";
         String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
         String uniqueUsersKey = UNIQUE_USERS_KEY + storeId + "|" + date + "|" + timeSlot;
         String slotKey = AVAILABLE_SLOTS_KEY + storeId + "|" + date + "|" + timeSlot;
@@ -62,7 +62,7 @@ public class ReservationService {
         // Redis Set에서 사용자 중복 확인
         Boolean isAlreadyReserved = redisTemplate.opsForSet().isMember(uniqueUsersKey, memberId);
         if (Boolean.TRUE.equals(isAlreadyReserved)) {
-            res = "사용자가 이미 예약 요청을 보냈습니다: "+memberId;
+            res = "사용자가 이미 예약 요청을 보냈습니다: " + memberId;
             log.info("사용자가 이미 예약 요청을 보냈습니다: {}", memberId);
             return res;
         }
@@ -70,7 +70,7 @@ public class ReservationService {
         // 대기열 중복 확인
         List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
         if (queue != null && queue.contains(memberId)) {
-            res = "사용자가 이미 대기열에 있습니다: "+ memberId;
+            res = "사용자가 이미 대기열에 있습니다: " + memberId;
             log.info("사용자가 이미 대기열에 있습니다: {}", memberId);
             return res;
         }
@@ -86,16 +86,21 @@ public class ReservationService {
 
         String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
         int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
+
         if (availableSlots > 0) {
             redisTemplate.opsForSet().add(uniqueUsersKey, memberId);
-            res+="예약 성공";
+            res += "예약 성공";
+            log.info("예약 성공: 사용자 {}, 남은 슬롯: {}", memberId, availableSlots - 1);
+        } else {
+            res += "예약이 마감되었습니다.";
+            log.info("예약이 마감되었습니다: 사용자 {}", memberId);
+            return res; // 예약 실패 시 대기열에 추가하지 않고 종료
         }
 
         // Redis List 사용. 대기열에 사용자 추가
         redisTemplate.opsForList().rightPush(queueKey, memberId);
 
-        //대기열 만료 - 예약 가능 기간 동안 유지.
-        // 키가 처음 생성될 때만 만료 시간 설정
+        // 대기열 만료 - 예약 가능 기간 동안 유지.
         if (!Boolean.TRUE.equals(redisTemplate.hasKey(queueKey))) {
             Store store = storeService.findById(storeId)
                     .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
@@ -105,20 +110,16 @@ public class ReservationService {
             if (secondsUntilExpiry > 0) {
                 redisTemplate.expire(queueKey, secondsUntilExpiry, TimeUnit.SECONDS);
                 redisTemplate.expire(uniqueUsersKey, secondsUntilExpiry, TimeUnit.SECONDS);
-                //log.info("대기열 키 만료 시간 설정 완료: {}초 후 만료", secondsUntilExpiry);
-            }/* else {
-                log.warn("예약 가능 기간이 이미 종료되었습니다. 키 만료 시간을 설정하지 않습니다.");
-            }*/
+            }
         }
 
-        // 대기열에서 사용자 순서
-        //Long position = redisTemplate.opsForList().size(queueKey);
-        log.info("대기열에 추가되었습니다. 사용자 {} 현재 순번: {}", memberId, queue.size()+1);
-        res+=" 대기열에 추가되었습니다. 사용자 "+memberId+" 현재 순번: "+(queue.size()+1);
+        log.info("대기열에 추가되었습니다. 사용자 {} 현재 순번: {}", memberId, queue.size() + 1);
+        res += " 대기열에 추가되었습니다. 사용자 " + memberId + " 현재 순번: " + (queue.size() + 1);
         return res;
     }
 
-    //대기열 상태 확인
+
+    //대기열 상태 확인(순번 조회)
     public String getQueueStatus(String date, String timeSlot, String memberId, int storeId) {
         String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
 
@@ -141,7 +142,7 @@ public class ReservationService {
         );*/
     }
     //예약 처리 스케줄러
-    @Scheduled(fixedRate = 5000) // 5초마다 실행
+    //@Scheduled(fixedRate = 5000) // 5초마다 실행
     public void processQueue() {
         ScanOptions scanOptions = ScanOptions.scanOptions()
                 .match(AVAILABLE_SLOTS_KEY + "*") // 패턴에 맞는 키 검색
@@ -151,9 +152,9 @@ public class ReservationService {
         try (Cursor<byte[]> cursor = redisTemplate.executeWithStickyConnection(
                 redisConnection -> redisConnection.scan(scanOptions)
         )) {
-            if (cursor == null) {
-                log.warn("No keys found for pattern: {}", AVAILABLE_SLOTS_KEY + "*");
-                return;
+            if (cursor == null || !cursor.hasNext()) {
+                log.info("처리할 예약 키가 없습니다. 스케줄러 실행 중단.");
+                return; // 처리할 키가 없으면 종료
             }
 
             while (cursor.hasNext()) {

@@ -27,7 +27,7 @@ public class ReservationController {
     //예약 시간에 들어온 요청인 경우 -> 실시간 대기열 시스템에 추가
     //예약 시 인원수 같은 건x 그냥 시간대 선택만!!
 
-    //날짜+시간대 별 예약 가능 인원 10명으로 설정
+    //날짜+시간대 별 예약 가능 인원 10명->20명으로 설정
 
     //예약 신청 - 실시간 대기열 시스템
 
@@ -51,8 +51,8 @@ public class ReservationController {
                 log.info("예약 시간이 아닙니다.");
                 return ResponseEntity.ok("예약 시간이 아닙니다.");
             }
-            log.info("슬롯초기화 10");
-            int availableSlots = 10;
+            log.info("슬롯초기화 20");
+            int availableSlots = 20;
             redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
         }
 
