@@ -6,6 +6,7 @@ import com.westsomsom.finalproject.store.dto.SearchRequestDto;
 import com.westsomsom.finalproject.store.dto.SearchResponseDto;
 import com.westsomsom.finalproject.store.dto.StoreRequestDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StoreService {
@@ -37,10 +39,11 @@ public class StoreService {
                 .reservationStart(storeRequestDto.getReservationStart())
                 .reservationFin(storeRequestDto.getReservationFin())
                 .build();
-
+        log.info(store.getStoreName());
         Store savedStore = storeRepository.save(store);
-
-        redisTemplate.opsForHash().put(cachePrefix, savedStore.getStoreId(), savedStore);
+        log.info(savedStore.getStoreId()+"");
+        log.info("cachePrefix {}",cachePrefix);
+        redisTemplate.opsForHash().put(cachePrefix, String.valueOf(savedStore.getStoreId()), savedStore);
 
         return savedStore;
     }
