@@ -4,15 +4,14 @@ import com.westsomsom.finalproject.store.application.StoreService;
 import com.westsomsom.finalproject.store.domain.Store;
 import com.westsomsom.finalproject.store.dto.SearchRequestDto;
 import com.westsomsom.finalproject.store.dto.SearchResponseDto;
+import com.westsomsom.finalproject.store.dto.StoreRequestDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -24,6 +23,21 @@ public class StoreController {
 
     private final StoreService storeService;
 
+    @PostMapping("/api/store")
+    public ResponseEntity<Store> createStore(@RequestBody StoreRequestDto storeRequestDto) {
+        Store store = storeService.createStore(storeRequestDto);
+        return ResponseEntity.ok(store);
+    }
+
+//    @GetMapping("/api/home")
+//    public ResponseEntity<Page<Store>> getAllStores(
+//            @RequestParam(value = "page", defaultValue = "0") Integer page
+//    ) {
+//        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, 20));
+//        return ResponseEntity.ok(stores);
+//    }
+
+    @Cacheable(value = "stores", key = "#page")
     @GetMapping("/api/home")
     public ResponseEntity<Page<Store>> getAllStores(
             @RequestParam(value = "page", defaultValue = "0") Integer page
