@@ -28,7 +28,7 @@ public class StoreController {
     public ResponseEntity<Page<Store>> getAllStores(
             @RequestParam(value = "page", defaultValue = "0") Integer page
     ) {
-        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, 50));
+        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, 20));
         return ResponseEntity.ok(stores);
     }
 
@@ -47,7 +47,7 @@ public class StoreController {
                 .storeLoc(loc)
                 .build();
 
-        Page<SearchResponseDto> storeList = storeService.searchStore(searchRequestDto, PageRequest.of(page,50));
+        Page<SearchResponseDto> storeList = storeService.searchStore(searchRequestDto, PageRequest.of(page,20));
 
         return ResponseEntity.ok().body(storeList.getContent());
     }
@@ -56,7 +56,7 @@ public class StoreController {
     public ResponseEntity<?> searchStoreCategory(@RequestParam(value = "category", required = false) String category,
                                                  @RequestParam(value = "page", defaultValue = "0") Integer page
     ) {
-        Page<SearchResponseDto> storeList = storeService.searchStoreCategory(category, PageRequest.of(page,50));
+        Page<SearchResponseDto> storeList = storeService.searchStoreCategory(category, PageRequest.of(page,20));
         return ResponseEntity.ok().body(storeList.getContent());
     }
 
