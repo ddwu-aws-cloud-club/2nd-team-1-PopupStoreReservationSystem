@@ -214,7 +214,7 @@ public class ReservationService {
             log.info("예약 완료: 사용자 {} 남은 슬롯: {}", nextUserId, availableSlots);
 
             // 알림 전송
-            notificationService.createScheduleAsync(id);
+//            notificationService.createScheduleAsync(id);
         }
     }
 
