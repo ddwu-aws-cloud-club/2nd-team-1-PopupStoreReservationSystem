@@ -5,6 +5,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.westsomsom.finalproject.store.domain.Store;
 import com.westsomsom.finalproject.store.dto.SearchRequestDto;
 import com.westsomsom.finalproject.store.dto.SearchResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,20 @@ import static com.westsomsom.finalproject.store.domain.QStore.store;
 public class StoreCustomRepositoryImpl implements StoreCustomRepository{
 
     private final JPAQueryFactory queryFactory;
+
+    public Page<Store> getAllStores(Pageable pageable) {
+        List<Store> storeList = queryFactory
+                .selectFrom(store)
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+                .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory
+                .select(store.count())
+                .from(store);
+
+        return PageableExecutionUtils.getPage(storeList, pageable, countQuery::fetchOne);
+    }
 
     public Page<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto, Pageable pageable) {
         List<SearchResponseDto> storeList = queryFactory
