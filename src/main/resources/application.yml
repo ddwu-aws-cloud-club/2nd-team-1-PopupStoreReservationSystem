@@ -44,6 +44,8 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 0
+      cache:
+        store: ${CACHE_STORE}
 
   profiles:
     include: local
