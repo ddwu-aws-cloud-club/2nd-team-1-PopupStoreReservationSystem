@@ -26,10 +26,9 @@ public class StoreController {
 
     @GetMapping("/api/home")
     public ResponseEntity<Page<Store>> getAllStores(
-            @RequestParam(value = "page", defaultValue = "0") Integer page,
-            @RequestParam(value = "size", defaultValue = "50") Integer size
+            @RequestParam(value = "page", defaultValue = "0") Integer page
     ) {
-        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, size));
+        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, 50));
         return ResponseEntity.ok(stores);
     }
 
