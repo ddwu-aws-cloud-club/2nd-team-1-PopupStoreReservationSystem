@@ -113,7 +113,7 @@ public class ReservationService {
             }
         }
 
-        log.info("대기열에 추가되었습니다. 사용자 {} 현재 순번: {}", memberId, queue.size() + 1);
+        //log.info("대기열에 추가되었습니다. 사용자 {} 현재 순번: {}", memberId, queue.size() + 1);
         res += " 대기열에 추가되었습니다. 사용자 " + memberId + " 현재 순번: " + (queue.size() + 1);
         return res;
     }
