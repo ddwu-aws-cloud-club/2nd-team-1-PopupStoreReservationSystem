@@ -19,7 +19,7 @@ public class StoreService {
     private final StoreRepository storeRepository;
 
     public Page<Store> getAllStores(Pageable pageable) {
-        return storeRepository.findAll(pageable);
+        return storeRepository.getAllStores(pageable);
     }
 
     public Page<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto, Pageable pageable) {
