@@ -178,7 +178,8 @@ https://github.com/west-somsom/PopupStoreReservationSystem
   - 카테고리 값을 쿼리스트링으로 입력해 검색
       
 ## **기능 시연**
-- 시연 영상 링크 첨부
+**시연 영상**
+https://drive.google.com/file/d/1np6pBRT7CSKuDsdFETkB0GAE_jj3KigE/view
   
 ## **성능 테스트**
 ### **1. 스모크 테스트**
