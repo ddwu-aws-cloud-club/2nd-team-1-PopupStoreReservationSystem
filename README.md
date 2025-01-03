@@ -51,7 +51,7 @@ https://github.com/west-somsom/PopupStoreReservationSystem
       
 ### **Infra**
 ![아키텍처 구조도 drawio (1)](https://github.com/user-attachments/assets/469f1b35-513a-4ff2-9d77-c5fb6c770cab)
-- 팝업 스토어 정보 등록 및 조회 기능 구현
+- 팝업 스토어 정보 등록 및 조회 기능 구현<br>
   **1. Redis OSS with ElasticCache 활용**
    - 등록 기능
      - 팝업 스토어 정보를 Redis에 동시에 저장하여 조회 속도 최적화
