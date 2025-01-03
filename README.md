@@ -52,13 +52,14 @@ https://github.com/west-somsom/PopupStoreReservationSystem
 ### **Infra**
 ![아키텍처 구조도 drawio (1)](https://github.com/user-attachments/assets/469f1b35-513a-4ff2-9d77-c5fb6c770cab)
 - 팝업 스토어 정보 등록 및 조회 기능 구현
+  
   **1. Redis OSS with ElasticCache 활용**
    - 등록 기능
      - 팝업 스토어 정보를 Redis에 동시에 저장하여 조회 속도 최적화
      - 등록시, Redis 캐시에 중복 데이터가 저장되지 않도록 유효성 검사를 추가로 수행
-    - 조회 기능
-      - 전체 정보 조회 시 Redis에서 우선 데이터 조회
-      - 캐시 미스 발생 시 DB에서 데이터를 조회하고, 이를 Redis에 저장
+   - 조회 기능
+     - 전체 정보 조회 시 Redis에서 우선 데이터 조회
+     - 캐시 미스 발생 시 DB에서 데이터를 조회하고, 이를 Redis에 저장
         
   **2. 현재 채택 방식**
   - 조회 기능은 RDS 직접 조회 방식을 사용 중으로, 캐시를 활용한 방식은 향후 효율성을 검토해 개선 예정
@@ -72,15 +73,14 @@ https://github.com/west-somsom/PopupStoreReservationSystem
   - Scheduler 생성 시 전달한 파라미터의 내용이 SES를 통해 이메일로 전송
     
 - 예약 기능 구현
-  - Redis OSS with ElastiCache 사용
-    -예약 가능 인원 수 제한을 위해 슬롯 초기화(10개)
+  - **Reids OSS with ElastiCache 사용**
+    - 예약 가능 인원수 제한을 위해 슬롯 초기화(10개)
     - 사용자 예약 요청
       - Redis의 Set을 사용해 사용자가 이미 대기열에 있는지 또는 예약 요청을 보낸 적이 있는지 확인
       - 확인 후 Redis 대기열(List)에 추가
     - 스케줄러를 통해 5초마다 예약 처리
-     - 예약 가능 슬롯키 확인 후 순서대로 예약 처리
-     - 사용자 예약 요청 시 Redis 대기열에 추가
-     - 중복 예약을 막기 위해 해당 사용자를 Redis에 추가
+      - 예약 가능 슬롯키 확인 후 순서대로 예약 처리
+      - 중복 예약을 막기 위해 해당 사용자를 Redis에 추가
     - TTL 만료 설정을 팝업 스토어 예약 기간 동안 유지
     - 예약 취소 시 Redis에서 슬롯 수 업데이트 및 사용자 Redis 중복 확인 데이터에서 제거
 
@@ -116,8 +116,9 @@ https://github.com/west-somsom/PopupStoreReservationSystem
 - 데이터 개요:
 <img width="594" alt="image" src="https://github.com/user-attachments/assets/cd125cd4-8fa4-4816-9329-1d0fd4fb9050" />
 
-  - **데이터 크기**: 118,176개의 구매 기록과 10개의 특성 (성별, 나이, 구매금액 등)
-  - **주요 특징**: 사용자 ID는 주소, 성별, 나이를 결합해 생성되며, 구매 금액을 추천 점수 계산에 사용
+   - **데이터 크기**: 118,176개의 구매 기록과 10개의 특성 (성별, 나이, 구매금액 등)
+   - **주요 특징**: 사용자 ID는 주소, 성별, 나이를 결합해 생성되며, 구매 금액을 추천 점수 계산에 사용
+      
 - 사용자 ID를 입력받아, 유사도 기반 상위 N개 추천 품목을 출력
 - **시각화 및 통찰**
   - **성별 분석** : 여성 사용자가 남성보다 높은 구매 금액을 기록
@@ -361,7 +362,7 @@ export default function () {
 ```
 ![image (3)](https://github.com/user-attachments/assets/ea51a19e-98a8-42ee-972b-8aaaa8e814aa)
 
-### **3. 스파이 테스트**
+### **3. 스파이크 테스트**
 **목적**: 짧은 시간 동안 갑작스러운 사용량 증가에 대한 시스템의 복원력 확인.
 
 1. **가상 사용자 수**: 10000명
@@ -377,6 +378,7 @@ export default function () {
     - **팝업 스토어 정보 상세 조회**: 여러 데이터 요청에 대한 복원력 확인.
     - **예약 신청**: 갑작스러운 예약 요청 폭주 시 안정성 검증.
 
+코드
 ```javascript
 import http from 'k6/http';
 import { sleep, check } from 'k6';
