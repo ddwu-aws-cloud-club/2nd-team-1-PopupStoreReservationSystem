@@ -34,6 +34,8 @@ https://github.com/west-somsom/PopupStoreReservationSystem
 - 사용자 데이터의 무결성과 서비스 안정성을 보장하기 위해 Multi-AZ 기반의 이중화 구성이 필요
 
 ### **아키텍처 설계 및 구성**
+### **Infra**
+![아키텍처 구조도 drawio (1)](https://github.com/user-attachments/assets/469f1b35-513a-4ff2-9d77-c5fb6c770cab)
 - Public과 Private으로 분리하여 외부 사용자가 접근하는 네트워크와 데이터가 저장된 네트워크 분리
   - Public Subnet
     - 외부 트래픽 처리
@@ -47,42 +49,45 @@ https://github.com/west-somsom/PopupStoreReservationSystem
    - ALB를 통한 인스턴스 부하 분산
    - AutoScaling 설정 및 ALB 대상 그룹 지정
 - 모니터링
-   - CloudWatch를 통한 로그 모니터링링
-      
-### **Infra**
-![아키텍처 구조도 drawio (1)](https://github.com/user-attachments/assets/469f1b35-513a-4ff2-9d77-c5fb6c770cab)
+   - CloudWatch를 통한 로그 모니터링
 - 팝업 스토어 정보 등록 및 조회 기능 구현
-  
-  **1. Redis OSS with ElasticCache 활용**
-   - 등록 기능
-     - 팝업 스토어 정보를 Redis에 동시에 저장하여 조회 속도 최적화
-     - 등록시, Redis 캐시에 중복 데이터가 저장되지 않도록 유효성 검사를 추가로 수행
-   - 조회 기능
-     - 전체 정보 조회 시 Redis에서 우선 데이터 조회
-     - 캐시 미스 발생 시 DB에서 데이터를 조회하고, 이를 Redis에 저장
-        
-  **2. 현재 채택 방식**
-  - 조회 기능은 RDS 직접 조회 방식을 사용 중으로, 캐시를 활용한 방식은 향후 효율성을 검토해 개선 예정
-      
+  1. Redis OSS with ElastiCache 활용
+     - 등록 기능
+       - 팝업 스토어 정보를 DB와 Redis에 동시에 저장하여 조회 속도 최적화
+       - 등록 시, Redis 캐시에 중복 데이터가 저장되지 않도록 유효성 검사를 추가로 수행
+     - 조회 기능
+       - 전체 정보 조회 시 Redis에서 우선 데이터 조회
+       - 캐시 미스 발생 시 DB에서 데이터를 조회하고, 이를 Redis에 저장
+  2. 현재 채택 방식
+     - 조회 기능은 **RDS 직접 조회 방식**을 사용 중으로, 캐시를 활용한 방식은 향후 효율성을 검토해 개선 예정
+       
 - 예약 알림 기능 구현
-  - EventBridge Scheduler -> SQS -> Lambda -> SES 트리거 연결 구조
-     - Spring Boot 서버에서 EventBridge Scheduler를 생성하기 위한 SDK를 호출
-     - 생성된 Scheduler가 SQS로 메시지를 전송
-     - SQS 메시지가 Lambda Trigger를 통해 Lambda 실행
-     - Lambda에서 SES 이메일 발송을 위한 SDK를 호출
-  - Scheduler 생성 시 전달한 파라미터의 내용이 SES를 통해 이메일로 전송
+  - **EventBridge Scheduler → SQS → Lambda → SES 트리거 연결 구조**
+    - Spring Boot 서버에서 EventBridge Scheduler를 생성하기 위한 SDK를 호출
+    - 생성된 Scheduler가 SQS로 메시지를 전송
+    - SQS 메시지가 Lambda Trigger를 통해 Lambda 실행
+    - Lambda에서 SES 이메일 발송을 위한 SDK를 호출
+  - **Scheduler 생성 시 전달한 파라미터의 내용이 SES를 통해 이메일로 전송**
     
 - 예약 기능 구현
-  - **Reids OSS with ElastiCache 사용**
-    - 예약 가능 인원수 제한을 위해 슬롯 초기화(10개)
-    - 사용자 예약 요청
+  - **Redis OSS with ElastiCache 사용**
+    - **예약 가능 인원수 제한을 위해 슬롯 초기화(10개)**
+    - **사용자 예약 요청 처리**
       - Redis의 Set을 사용해 사용자가 이미 대기열에 있는지 또는 예약 요청을 보낸 적이 있는지 확인
       - 확인 후 Redis 대기열(List)에 추가
-    - 스케줄러를 통해 5초마다 예약 처리
-      - 예약 가능 슬롯키 확인 후 순서대로 예약 처리
-      - 중복 예약을 막기 위해 해당 사용자를 Redis에 추가
-    - TTL 만료 설정을 팝업 스토어 예약 기간 동안 유지
-    - 예약 취소 시 Redis에서 슬롯 수 업데이트 및 사용자 Redis 중복 확인 데이터에서 제거
+    - **Redis Pub/Sub(Publish/Subscribe)를 통해 실시간으로 예약 처리**
+      - 초반에는 스케줄러를 사용하였으나 이후 성능 개선을 위해 Redis Pub/Sub 도입(스파이크 테스트)
+      - Redis Pub/Sub 방식
+        - Redis에서 제공하는 실시간 이벤트 기반 비동기 메시징 시스템
+        - 메시지를 발행하고 이를 구독하는 애플리케이션 간 실시간 메시지 전달
+        - 예약 요청이 들어오면 메시지를 Redis 채널에 발행
+              `redisTemplate.convertAndSend(channel, message);`
+        - Redis는 해당 채널 구독 중인 구독자에게 메시지 전달
+        - 메시지를 수신한 후 예약 요청 처리
+       - 예약 가능 슬롯키 확인 후 순서대로 예약 처리
+       - 중복 예약을 막기 위해 예약한 사용자를 Redis에 추가
+    - **TTL 만료 설정을 팝업 스토어 예약 기간 동안 유지**
+    - **예약 취소 시 Redis에서 슬롯 수 업데이트 및 사용자 Redis 중복 확인 데이터에서 제거**          
 
 ## **Back-End**
 ### **소셜 로그인 서비스**
@@ -102,9 +107,9 @@ https://github.com/west-somsom/PopupStoreReservationSystem
     - 사용자 정보 수정: 입력된 정보만 선택적으로 업데이트
       
 ### **추천 서비스**
-- 구매 데이터 기반 팝업 스토어 추천 시스템
-- 접근 방식:
-  - 협업 필터링(collaborative filtering)과 아이템 기반 코사인 유사도 (cosine similarity)활용
+- **구매 데이터 기반 팝업 스토어 추천 시스템**
+- **접근 방식**:
+  - **협업 필터링**(collaborative filtering)과 **아이템 기반** **코사인 유사도** (cosine similarity)활용
   - Precision@K, Recall@K, F1-Score 등의 평가 지표를 사용하여 성능 검증
     
 ||협업 필터링|코사인 유사|
@@ -138,20 +143,18 @@ https://github.com/west-somsom/PopupStoreReservationSystem
 면에 띄어주어 클릭을 유도**
 
 ### **예약 서비스**
-- **Redis 대기열** 사용
-- `@Scheduled` 어노테이션을 사용하여 예약 처리 자동화
-- List와 Set을 결합하여 구현
+- List와 Set을 결합하여 Redis 대기열 사용
+- Redis Pub/Sub을 사용하여 예약 처리 자동화
 - 날짜와 시간대 별로 정해진 인원수만 선착순으로 처리
 - Redis에서 예약 가능한 인원수 확인
 - 대기열에서 순서대로 예약을 처리하고 슬롯 데이터 업데이트
 - Redis 키에 TTL을 설정하여 예약 가능 기간 종료 후 데이터 자동 삭제
 - 예약 시 중복 여부를 확인해 무분별한 요청 방지
-- 후에 스케줄러의 비효율성 감소를 위해 Redis Pub/Sub 도입
 
 **[어플리케이션 구성(500명이 요청하는 경우)]**
 
-(1) 500명의 사용자가 특정 날짜의 특정 시간대에 예약 요청
-(2) 500명의 사용자는 요청 순서대로 대기열에 등록 
+(1) 100명의 사용자가 특정 날짜의 특정 시간대에 예약 요청
+(2) 100명의 사용자는 요청 순서대로 대기열에 등록 
    중복으로 예약 요청을 넣을 수 없도록 Redis에 등록
 (3) 스케줄러가 동작하여 대기열에 있는 사용자 예약 처리
 (4) 성공 시 선착순으로 10명씩 예약 성공
@@ -273,6 +276,11 @@ export default function () {
 
 - 팝업스토어 조회 redis 적용 후
 ![image (2)](https://github.com/user-attachments/assets/38278116-9eb6-44a1-a210-00b830565354)
+- 응답 성공률: 100%
+- `http_req_duration` 평균 요청 시간: 18.28ms
+- `http_reqs` 초당 요청 처리량: 초당 95건
+- `iteration_duration` 평균 반복 시간: 1.05s
+
 
 ### **2. 부하 테스트**
 **목적**: 시스템의 최대 처리량을 파악하고 성능 병목 현상을 진단.
@@ -362,7 +370,11 @@ export default function () {
 }
 ```
 ![image (3)](https://github.com/user-attachments/assets/ea51a19e-98a8-42ee-972b-8aaaa8e814aa)
-
+- 응답 성공률: 99.98%
+- `http_req_duration` 평균 요청 시간: 31.28ms
+- `http_reqs` 초당 요청 처리량: 초당 362건
+- `iteration_duration` 평균 반복 시간: 31.28s
+  
 ### **3. 스파이크 테스트**
 **목적**: 짧은 시간 동안 갑작스러운 사용량 증가에 대한 시스템의 복원력 확인.
 
@@ -490,8 +502,16 @@ export default function () {
   sleep(1); // 1초 대기
 }
 ```
+- Redis Pub/Sub 적용 전
 ![image (4)](https://github.com/user-attachments/assets/07ba003d-ee74-43c5-8465-fde6bf2fb35f)
-
+- Redis Pub/Sub 적용 후
+![image (5)](https://github.com/user-attachments/assets/04c2fccc-db3c-40b5-9bfd-01c55a5af4fa)
+- 응답 속도: 최대 응답 시간 및 응답 수신 시간
+  - http_req_receiving 크게 개선 : 절반 가량 감소 (1m0s -> 55.99s)
+   ![image (2) (1)](https://github.com/user-attachments/assets/87efffe2-1aed-4bd8-b55f-fcd2620cf333)
+- 데이터 전송량: 서버-클라이언트 간 전송 데이터 양 감소
+  - Redis 적용으로 인해 불필요한 데이터 전송 감소
+    ![image (6)](https://github.com/user-attachments/assets/e0c67a35-6bee-4f12-9c16-267ba2f01f11)
 
 ## **개선할 점**
 #### 1. 팝업 스토어 전체 조회 부분 Redis 사용
@@ -512,15 +532,7 @@ export default function () {
 - 빌드 파일 생성 및  Filezilla를 통한 수동 배포 진행
 - 적절한 CI/CD 파이프라인 구축 필요
   - github action + ECR 등의 파이프라인 구축 가능
-#### 4. 스케줄러 대신 Redis Pub/Sub 사용
-- Redis Pub/Sub를 통해 스케줄러 방식의 비효율성을 줄이고 실시간 처리 가능
-  - Redis Pub/Sub 방식
-    - Redis에 메시지를 발행하고 이를 구독하는 애플리케이션이 실시간으로 이벤트 기반 비동기 처리
-    - 예약 요청이 들어오면 메시지를 Redis 채널에 발행
-            **redisTemplate.convertAndSend(channel, message);**         
-    - Redis는 해당 채널 구독 중인 구독자에게 메시지 전달
-    - 메시지를 수신한 후 예약 요청 처리
-#### 5. Auto Scaling 정책 부재
+#### 4. Auto Scaling 정책 부재
 - 정책 설정의 필요성
    - 성능 테스트 시 인스턴스의 컴퓨터 자원에 따라 결과가 다르게 나타남
    - Auto Scaling Group의 CPUUtilization을 경보로 설정한 단계 크기 정책 필요
