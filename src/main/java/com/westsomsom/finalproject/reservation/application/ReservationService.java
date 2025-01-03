@@ -29,6 +29,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final StoreService storeService;
     private final NotificationService notificationService;
+    private final ReservationPublisher reservationPublisher;
 
     private static final String REDIS_QUEUE_KEY = "reservationQueue|";
     private static final String UNIQUE_USERS_KEY = "uniqueUsers|";
@@ -111,6 +112,10 @@ public class ReservationService {
             }*/
         }
 
+        // Pub/Sub 메시지 발행
+        reservationPublisher.publishReservationEvent("reservationChannel",
+                storeId + "|" + date + "|" + timeSlot + "|" + memberId);
+
         // 대기열에서 사용자 순서
         //Long position = redisTemplate.opsForList().size(queueKey);
         log.info("대기열에 추가되었습니다. 사용자 {} 현재 순번: {}", memberId, queue.size()+1);
@@ -141,7 +146,7 @@ public class ReservationService {
         );*/
     }
     //예약 처리 스케줄러
-    @Scheduled(fixedRate = 5000) // 5초마다 실행
+    //@Scheduled(fixedRate = 5000) // 5초마다 실행
     public void processQueue() {
         ScanOptions scanOptions = ScanOptions.scanOptions()
                 .match(AVAILABLE_SLOTS_KEY + "*") // 패턴에 맞는 키 검색
