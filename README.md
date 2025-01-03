@@ -50,21 +50,18 @@ https://github.com/west-somsom/PopupStoreReservationSystem
    - CloudWatch를 통한 로그 모니터링링
       
 ### **Infra**
-**이미지**
-- 팝업 스토어 정보 등록 기능 구현
-   - Redis 캐시 사용
-     - 팝업 스토어 정보를 Redis에 저장하여 빠르게 조회할 수 있도록 구현
-     - Redis를 사용하여 스토어 정보에 대한 캐시를 유지하고, 이를 통해 조회 속도 최적화
-    - 데이터 저장 흐름
-      - 스토어 정보를 등록하면, 데이터는 DB에 저장되고, Redis 캐시에도 저장
-      - 스토어 정보 등록할 때 Redis에 중복 등록을 방지하기 위한 유효성 검사 진행
+![아키텍처 구조도 drawio (1)](https://github.com/user-attachments/assets/469f1b35-513a-4ff2-9d77-c5fb6c770cab)
+- 팝업 스토어 정보 등록 및 조회 기능 구현
+  **1. Redis OSS with ElasticCache 활용**
+   - 등록 기능
+     - 팝업 스토어 정보를 Redis에 동시에 저장하여 조회 속도 최적화
+     - 등록시, Redis 캐시에 중복 데이터가 저장되지 않도록 유효성 검사를 추가로 수행
+    - 조회 기능
+      - 전체 정보 조회 시 Redis에서 우선 데이터 조회
+      - 캐시 미스 발생 시 DB에서 데이터를 조회하고, 이를 Redis에 저장
         
-- 팝업 스토어 전체 정보 조회 기능 구현
-  - Redis 캐시 사용 O
-    - 팝업 스토어 정보 전체 조회 시, Redis 캐시에서 우선 데이터 조회
-    - Redis에 데이터가 없는 경우, DB에서 조회하고 결과를 Redis에 저장
-  - Redis 캐시 사용 X
-    - RDS에서 직접 조회
+  **2. 현재 채택 방식**
+  - 조회 기능은 RDS 직접 조회 방식을 사용 중으로, 캐시를 활용한 방식은 향후 효율성을 검토해 개선 예정
       
 - 예약 알림 기능 구현
   - EventBridge Scheduler -> SQS -> Lambda -> SES 트리거 연결 구조
@@ -76,14 +73,34 @@ https://github.com/west-somsom/PopupStoreReservationSystem
     
 - 예약 기능 구현
   - Redis OSS with ElastiCache 사용
-  - 백엔드 서버에서 Redis 대기열을 통해 스케줄러로 예약 처리
-     - 예약 가능 인원수 제한을 위해 슬롯 설정(10개)
+    -예약 가능 인원 수 제한을 위해 슬롯 초기화(10개)
+    - 사용자 예약 요청
+      - Redis의 Set을 사용해 사용자가 이미 대기열에 있는지 또는 예약 요청을 보낸 적이 있는지 확인
+      - 확인 후 Redis 대기열(List)에 추가
+    - 스케줄러를 통해 5초마다 예약 처리
+     - 예약 가능 슬롯키 확인 후 순서대로 예약 처리
      - 사용자 예약 요청 시 Redis 대기열에 추가
      - 중복 예약을 막기 위해 해당 사용자를 Redis에 추가
-     - TTL 만료 설정을 팝업 스토어 예약 기간 동안 유지
-     - 후에 스케줄러의 비효율성 감소를 위해 Redis Pub/Sub 도입
+    - TTL 만료 설정을 팝업 스토어 예약 기간 동안 유지
+    - 예약 취소 시 Redis에서 슬롯 수 업데이트 및 사용자 Redis 중복 확인 데이터에서 제거
 
 ## **Back-End**
+### **소셜 로그인 서비스**
+- 카카오 오픈 API를 활용한 소셜 로그인/로그아웃 구현
+- 흐름
+  - **로그인 흐름**: 카카오 로그인 요청 → 콜백으로 인증 코드 수신 → 액세스 토큰 발급 → 사용자 정보 조회 및 저장
+  - **정보 업데이트**: API를 통해 사용자 정보를 수정 및 유지
+1. 카카오 인증 및 사용자 정보 관리
+    - 카카오 로그인 URL 생성 : https://kauth.kakao.com/oauth/authorize를 활용해 로그인 요청 URL 생성
+    - 액세스 토큰 발급 : 사용자 인증 후 받은 code로 카카오 API에서 토큰 요청
+    - 사용자 정보 조회 : 액세스 토큰으로 사용자 정보 조회 후 DB에서 저장 및 세션 생성
+2. 콜백 및 사용자 정보 갱신
+    - 카카오 로그인 콜백: 토큰 및 사용자 정보 처리 후 성공 메시지 반환
+    - 사용자 정보 업데이트: 전화번호, 성별, 나이 등 사용자 정보를 업데이트(추가적으로 입력받음)하고 DB 및 세션 동기화
+3. 사용자 정보 API
+    - 사용자 정보 조회: 특정 사용자의 정보를 DB에서 검색 및 반환
+    - 사용자 정보 수정: 입력된 정보만 선택적으로 업데이트
+      
 ### **추천 서비스**
 - 구매 데이터 기반 팝업 스토어 추천 시스템
 - 접근 방식:
@@ -97,7 +114,8 @@ https://github.com/west-somsom/PopupStoreReservationSystem
 |**사용 이유**|대규모 사용자와 다양한 아이템 조합을 다룰 수 있음|효율적 계산과 사용자 구매 패턴 유사성 확인|
 
 - 데이터 개요:
-  이미지
+<img width="594" alt="image" src="https://github.com/user-attachments/assets/cd125cd4-8fa4-4816-9329-1d0fd4fb9050" />
+
   - **데이터 크기**: 118,176개의 구매 기록과 10개의 특성 (성별, 나이, 구매금액 등)
   - **주요 특징**: 사용자 ID는 주소, 성별, 나이를 결합해 생성되며, 구매 금액을 추천 점수 계산에 사용
 - 사용자 ID를 입력받아, 유사도 기반 상위 N개 추천 품목을 출력
@@ -119,6 +137,27 @@ https://github.com/west-somsom/PopupStoreReservationSystem
 면에 띄어주어 클릭을 유도**
 
 ### **예약 서비스**
+- **Redis 대기열** 사용
+- `@Scheduled` 어노테이션을 사용하여 예약 처리 자동화
+- List와 Set을 결합하여 구현
+- 날짜와 시간대 별로 정해진 인원수만 선착순으로 처리
+- Redis에서 예약 가능한 인원수 확인
+- 대기열에서 순서대로 예약을 처리하고 슬롯 데이터 업데이트
+- Redis 키에 TTL을 설정하여 예약 가능 기간 종료 후 데이터 자동 삭제
+- 예약 시 중복 여부를 확인해 무분별한 요청 방지
+- 후에 스케줄러의 비효율성 감소를 위해 Redis Pub/Sub 도입
+
+**[어플리케이션 구성(500명이 요청하는 경우)]**
+
+(1) 500명의 사용자가 특정 날짜의 특정 시간대에 예약 요청
+(2) 500명의 사용자는 요청 순서대로 대기열에 등록 
+   중복으로 예약 요청을 넣을 수 없도록 Redis에 등록
+(3) 스케줄러가 동작하여 대기열에 있는 사용자 예약 처리
+(4) 성공 시 선착순으로 10명씩 예약 성공
+(5) 실패 시 “예약이 마감되었습니다.”라는 응답 반환
+(6) 대기 시간 동안 현재 자신의 순번과 뒤에 남은 사람 수 확인 가능
+(7) 위의 과정을 통해 이벤트 종료(특정 시간대에 10명 예약 성공)
+  
 ### **채팅 서비스**
 - **WebSocket을 활용한 실시간 채팅 기능**
     - WebSocket을 사용하여 클라이언트와 서버 간 실시간 양방향 통신 구현
@@ -131,6 +170,11 @@ https://github.com/west-somsom/PopupStoreReservationSystem
     - **채팅 (TALK)** 메시지는 Message 객체로 변환하여 DB에 저장하고, 모든 연결된 클라이언트에 실시간으로 메시지를 전송
 - 채팅 메시지 조회
     - 해당 스토어에 속한 모든 메시지를 조회하여 반환
+
+### **검색 서비스**
+- QueryDSL을 사용해 팝업스토어 검색 기능 구현
+  - 이름, 팝업스토어 시작일, 마감일, 위치 값을 쿼리스트링으로 입력해 검색
+  - 카테고리 값을 쿼리스트링으로 입력해 검색
       
 ## **기능 시연**
 - 시연 영상 링크 첨부
@@ -223,9 +267,10 @@ export default function () {
 }
 ```
 - 팝업스토어 redis 적용 전
-  **이미지**
+![image (1)](https://github.com/user-attachments/assets/d5420f13-2aec-4c18-a604-157ba67845ab)
+
 - 팝업스토어 조회 redis 적용 후
-  **이미지**
+![image (2)](https://github.com/user-attachments/assets/38278116-9eb6-44a1-a210-00b830565354)
 
 ### **2. 부하 테스트**
 **목적**: 시스템의 최대 처리량을 파악하고 성능 병목 현상을 진단.
@@ -314,7 +359,7 @@ export default function () {
   sleep(1); // 1초 대기
 }
 ```
-**이미지**
+![image (3)](https://github.com/user-attachments/assets/ea51a19e-98a8-42ee-972b-8aaaa8e814aa)
 
 ### **3. 스파이 테스트**
 **목적**: 짧은 시간 동안 갑작스러운 사용량 증가에 대한 시스템의 복원력 확인.
@@ -442,9 +487,39 @@ export default function () {
   sleep(1); // 1초 대기
 }
 ```
-**이미지**
+![image (4)](https://github.com/user-attachments/assets/07ba003d-ee74-43c5-8465-fde6bf2fb35f)
+
 
 ## **개선할 점**
-
+#### 1. 팝업 스토어 전체 조회 부분 Redis 사용
+- 도입 배경
+  - 기존 DB 직접 조회 방식에서, 데이터 양이 **"connection timeout"** 오류 발생:
+        `read tcp 192.168.1.6:58959->15.164.35.224:80: wsarecv: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond."`
+  - 원인은 대량 조회로 인한 DB 부하로 추정, 이를 해결하기 위해 캐시(Redis) 도입
+    - **변경 내용:** 팝업 스토어 등록 시 캐시에 저장 → 전체 조회는 캐시에서 처리
+- 문제점
+  - 캐시 미스 시 DB 조회 및 캐시 저장 과정 추가로, 단순 DB 조회보다 비효율적
+- 개선 방향
+   - 캐시 전략 최적화 필요:
+      - 자주 조회되는 데이터 우선 캐싱
+      - 캐시 적중률 향상을 위한 TTL(Time-to-Live) 및 데이터 구조 개선
+#### 2. EC2 접근을 위해 Bastion host 사용
+- Bastion host 대신 System Manager Session Manager 도입을 통해 보다 더 안전한 접근 관리 필요
+#### 3. CI/CD 파이프라인 부재
+- 빌드 파일 생성 및  Filezilla를 통한 수동 배포 진행
+- 적절한 CI/CD 파이프라인 구축 필요
+  - github action + ECR 등의 파이프라인 구축 가능
+#### 4. 스케줄러 대신 Redis Pub/Sub 사용
+- Redis Pub/Sub를 통해 스케줄러 방식의 비효율성을 줄이고 실시간 처리 가능
+  - Redis Pub/Sub 방식
+    - Redis에 메시지를 발행하고 이를 구독하는 애플리케이션이 실시간으로 이벤트 기반 비동기 처리
+    - 예약 요청이 들어오면 메시지를 Redis 채널에 발행
+            **redisTemplate.convertAndSend(channel, message);**         
+    - Redis는 해당 채널 구독 중인 구독자에게 메시지 전달
+    - 메시지를 수신한 후 예약 요청 처리
+#### 5. Auto Scaling 정책 부재
+- 정책 설정의 필요성
+   - 성능 테스트 시 인스턴스의 컴퓨터 자원에 따라 결과가 다르게 나타남
+   - Auto Scaling Group의 CPUUtilization을 경보로 설정한 단계 크기 정책 필요
 
 
