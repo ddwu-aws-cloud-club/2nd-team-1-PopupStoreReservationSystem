@@ -544,5 +544,3 @@ export default function () {
 - 정책 설정의 필요성
    - 성능 테스트 시 인스턴스의 컴퓨터 자원에 따라 결과가 다르게 나타남
    - Auto Scaling Group의 CPUUtilization을 경보로 설정한 단계 크기 정책 필요
-
-
