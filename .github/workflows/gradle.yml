@@ -58,11 +58,20 @@ jobs:
         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
+    - name: Retrieve most recent ECS task definition JSON file
+      id: retrieve-task-def
+      env:
+        TASK_DEFINITION: west-somsom-task-definition
+      run: |
+        aws ecs describe-task-definition --task-definition $TASK_DEFINITION --query taskDefinition > task-definition.json
+        cat task-definition.json
+        echo "::set-output name=task-def-file::task-definition.json"
+
     - name: Create ECS task definition
       id: setting-task-definition
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: west-somsom-task-definition.json
+        task-definition: ${{ steps.retrieve-task-def.outputs.task-def-file }}
         container-name: west-somsom
         image: ${{ steps.build-image.outputs.image }}
 
