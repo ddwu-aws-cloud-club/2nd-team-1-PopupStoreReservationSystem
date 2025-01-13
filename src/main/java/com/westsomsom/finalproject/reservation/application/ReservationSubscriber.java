@@ -31,45 +31,58 @@ public class ReservationSubscriber implements MessageListener {
     }
 
     private void processReservation(String message) {
-        try {
-            // 메시지 파싱 (예: JSON 포맷일 경우 Jackson 사용)
-            String[] parts = message.split("\\|"); // 예: "storeId|date|timeSlot|userId"
-            int storeId = Integer.parseInt(parts[0]);
-            String date = parts[1];
-            String timeSlot = parts[2];
-            String userId = parts[3];
+        int maxAttempts = 5;
+        int retryDelay = 100; // 시작 딜레이 (ms)
 
-            // 남은 슬롯 확인
-            String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
-            String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
-            int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
+        for (int attempts = 1; attempts <= maxAttempts; attempts++) {
+            try {
+                String[] parts = message.split("\\|");
+                int storeId = Integer.parseInt(parts[0]);
+                String date = parts[1];
+                String timeSlot = parts[2];
+                String userId = parts[3];
 
-            if (availableSlots > 0) {
-                // Store 정보 조회
-                Store store = storeService.findById(storeId)
-                        .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
+                String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
+                String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
+                int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
 
-                // 예약 정보 생성 및 저장
-                Reservation reservation = reservationRepository.save(Reservation.builder()
-                        .store(store)
-                        .date(date)
-                        .timeSlot(timeSlot)
-                        .user(userId)
-                        .status(ReservationStatus.COMPLETED)
-                        .build());
+                if (availableSlots > 0) {
+                    Store store = storeService.findById(storeId)
+                            .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
 
-                log.info("예약 완료: 사용자 {}", userId);
+                    Reservation reservation = reservationRepository.save(Reservation.builder()
+                            .store(store)
+                            .date(date)
+                            .timeSlot(timeSlot)
+                            .user(userId)
+                            .status(ReservationStatus.COMPLETED)
+                            .build());
 
-                availableSlots--;
-                redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
-                log.info("Updated available slots: {} for {}", availableSlots, slotKey);
-            }else{
-                log.info("예약이 마감되었습니다: 사용자 {}", userId);
-                return;
+                    log.info("예약 완료: 사용자 {}", userId);
+                    redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
+                    log.info("Updated available slots: {} for {}", availableSlots, slotKey);
+                    return;
+                } else {
+                    log.info("예약이 마감되었습니다: 사용자 {}", userId);
+                    return;
+                }
+            } catch (Exception e) {
+                log.error("예약 처리 실패. 재시도 시도: {}/{}", attempts, maxAttempts, e);
+
+                if (attempts == maxAttempts) {
+                    log.error("최대 재시도 횟수 초과. 예약 처리 중단: {}", message);
+                    break;
+                }
+
+                try {
+                    Thread.sleep(retryDelay); // 딜레이 적용
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("재시도 중 인터럽트 발생.", ie);
+                }
+
+                retryDelay *= 2; // 지수 증가
             }
-
-        } catch (Exception e) {
-            log.error("Error processing reservation message: {}", message, e);
         }
     }
 }
