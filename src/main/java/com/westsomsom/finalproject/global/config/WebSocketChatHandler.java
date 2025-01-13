@@ -1,102 +1,94 @@
 package com.westsomsom.finalproject.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.westsomsom.finalproject.store.dao.StoreRepository;
-import com.westsomsom.finalproject.store.domain.Store;
-import com.westsomsom.finalproject.user.dao.UserInfoRepository;
-import com.westsomsom.finalproject.chat.dto.ChatMessageDto;
+import com.westsomsom.finalproject.chat.application.ChatMessagePublisher;
+import com.westsomsom.finalproject.chat.application.ChatMessageSubscriber;
+import com.westsomsom.finalproject.chat.application.ChatService;
 import com.westsomsom.finalproject.chat.domain.Message;
-import com.westsomsom.finalproject.chat.dao.ChatRepository;
-import com.westsomsom.finalproject.user.domain.UserInfo;
-
+import com.westsomsom.finalproject.chat.dto.ChatMessageDto;
+import com.westsomsom.finalproject.store.application.StoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.stereotype.Service;
+import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
+@Service
 public class WebSocketChatHandler extends TextWebSocketHandler {
-    private final ObjectMapper mapper;
-    private final ChatRepository chatRepository; // MessageRepository 의존성 주입
-    private final UserInfoRepository userInfoRepository;
-    private final StoreRepository storeRepository;
+    private final ObjectMapper objectMapper;
+    private final ChatService chatService;
+    private final StoreService storeService;
+    private final ChatMessagePublisher chatMessagePublisher;
+    private final ChatMessageSubscriber chatMessageSubscriber;
 
-    // 팝업 스토어 ID와 세션을 매핑할 Map
-    private final Map<Integer, Set<WebSocketSession>> popupStoreSessions = new HashMap<>();
+    // Store별 WebSocket 세션 관리
+    private final Map<Integer, Set<WebSocketSession>> storeSessions = new HashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        log.info("{} 연결됨", session.getId());
-        session.sendMessage(new TextMessage("WebSocket 연결 완료"));
+        log.info("새로운 WebSocket 연결: {}", session.getId());
+
+        int storeId = extractStoreIdFromSession(session);
+
+        // Store 존재 여부 확인
+        storeService.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("Store not found with id: " + storeId));
+
+        // 기존 메시지 클라이언트로 전송
+        List<Message> messages = chatService.getMessagesByStoreId(storeId);
+        for (Message message : messages) {
+            String jsonMessage = objectMapper.writeValueAsString(convertMessageToDto(message));
+            session.sendMessage(new TextMessage(jsonMessage));
+        }
+
+        // 세션 추가
+        storeSessions.computeIfAbsent(storeId, k -> new HashSet<>()).add(session);
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        String payload = message.getPayload();
-        log.info("payload {}", payload);
+    protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) throws Exception {
+        log.info("메시지 수신: {}", textMessage.getPayload());
 
-        try {
-            // 메시지를 ChatMessageDto로 변환
-            ChatMessageDto chatMessageDto = mapper.readValue(payload, ChatMessageDto.class);
-            log.info("messageDto {}", chatMessageDto);
+        ChatMessageDto chatMessageDto = objectMapper.readValue(textMessage.getPayload(), ChatMessageDto.class);
 
-            int popupStoreId = chatMessageDto.getStoreId();
+        // ChatMessagePublisher를 통해 메시지를 Redis로 발행
+        chatMessagePublisher.publish(textMessage.getPayload());
 
-            if (chatMessageDto.getMessageType().equals(ChatMessageDto.MessageType.JOIN)) {
-                popupStoreSessions.computeIfAbsent(popupStoreId, s -> new HashSet<>()).add(session);
-                chatMessageDto.setMessage(chatMessageDto.getSender() + " 님이 입장하셨습니다.");
-            } else if (chatMessageDto.getMessageType().equals(ChatMessageDto.MessageType.LEAVE)) {
-                popupStoreSessions.getOrDefault(popupStoreId, new HashSet<>()).remove(session);
-                chatMessageDto.setMessage(chatMessageDto.getSender() + " 님이 퇴장하셨습니다.");
-            } else if (chatMessageDto.getMessageType().equals(ChatMessageDto.MessageType.TALK)) {
-                // 채팅 메시지 DB에 저장
-                saveMessageToDB(chatMessageDto);
+        // 동일 Store의 모든 세션에 메시지 브로드캐스트
+        int storeId = chatMessageDto.getStoreId();
+        Set<WebSocketSession> sessions = storeSessions.getOrDefault(storeId, Collections.emptySet());
+        for (WebSocketSession wsSession : sessions) {
+            if (wsSession.isOpen()) {
+                wsSession.sendMessage(textMessage);
             }
-
-            // 메시지 전송 (같은 팝업 스토어의 모든 세션에 전송)
-            Set<WebSocketSession> sessions = popupStoreSessions.getOrDefault(popupStoreId, new HashSet<>());
-            for (WebSocketSession webSocketSession : sessions) {
-                webSocketSession.sendMessage(new TextMessage(mapper.writeValueAsString(chatMessageDto)));
-            }
-        } catch (Exception e) {
-            log.error("Error handling message: {}", e.getMessage(), e);
-            session.sendMessage(new TextMessage("Error: " + e.getMessage()));
         }
-    }
-
-    private void saveMessageToDB(ChatMessageDto chatMessageDto) {
-        // 실제 사용자 정보를 DB에서 조회해야 합니다
-        UserInfo userInfo = userInfoRepository.findById(chatMessageDto.getSender())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // 실제 스토어 정보를 DB에서 조회해야 합니다
-        Store store = storeRepository.findById(chatMessageDto.getStoreId())
-                .orElseThrow(() -> new RuntimeException("Store not found"));
-
-        Message message = new Message();
-        message.setUserInfo(userInfo);
-        message.setStore(store);
-        message.setContent(chatMessageDto.getMessage());
-        message.setTimestamp(java.time.LocalDateTime.now());
-
-        chatRepository.save(message); // DB에 저장
-        log.info("메시지 저장 완료: {}", message);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        log.info("{} 연결 끊김", session.getId());
-        popupStoreSessions.values().forEach(sessions -> sessions.remove(session));
+        log.info("WebSocket 연결 종료: {}", session.getId());
+        storeSessions.values().forEach(sessions -> sessions.remove(session));
+    }
+
+    private int extractStoreIdFromSession(WebSocketSession session) {
+        String query = Objects.requireNonNull(session.getUri()).getQuery();
+        return Integer.parseInt(Arrays.stream(query.split("&"))
+                .filter(param -> param.startsWith("storeId="))
+                .findFirst()
+                .orElse("storeId=0")
+                .split("=")[1]);
+    }
+
+    private ChatMessageDto convertMessageToDto(Message message) {
+        return ChatMessageDto.builder()
+                .messageType(ChatMessageDto.MessageType.TALK)
+                .storeId(message.getStore().getStoreId())  // Store에서 getStoreId() 호출
+                .sender(String.valueOf(message.getUserInfo().getUserId()))  // UserInfo에서 getUserId() 호출
+                .message(message.getContent())
+                .build();
     }
 }

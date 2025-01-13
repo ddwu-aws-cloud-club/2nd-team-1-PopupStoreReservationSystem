@@ -3,6 +3,7 @@ package com.westsomsom.finalproject.chat.domain;
 import com.westsomsom.finalproject.store.domain.Store;
 import com.westsomsom.finalproject.user.domain.UserInfo;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -32,4 +33,12 @@ public class Message {
 
     @Column(nullable = false)
     private LocalDateTime timestamp;  // 메시지 전송 시간
+
+    @Builder
+    public Message(UserInfo userInfo, String content, Store store, LocalDateTime timestamp) {
+        this.userInfo = userInfo;
+        this.content = content;
+        this.store = store;
+        this.timestamp = timestamp;
+    }
 }
