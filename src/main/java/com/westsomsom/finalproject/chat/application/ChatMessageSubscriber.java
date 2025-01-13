@@ -30,29 +30,39 @@ public class ChatMessageSubscriber implements MessageListener {
 
         try {
             // Redis에서 전달받은 메시지를 처리
+            log.debug("Attempting to deserialize the received message into ChatMessageDto: {}", receivedMessage);
             ChatMessageDto chatMessageDto = mapper.readValue(receivedMessage, ChatMessageDto.class);
+            log.debug("Deserialized ChatMessageDto: {}", chatMessageDto);
 
             // DB 저장
             saveMessageToDB(chatMessageDto);
             log.info("Redis Subscriber 메시지 처리 완료: {}", chatMessageDto);
+        } catch (com.fasterxml.jackson.databind.exc.MismatchedInputException e) {
+            // JSON 역직렬화 오류
+            log.error("JSON 역직렬화 오류 발생: 잘못된 JSON 형식입니다. 메시지: {}", receivedMessage, e);
         } catch (Exception e) {
+            // 다른 오류들에 대한 처리
             log.error("Redis Subscriber 메시지 처리 중 오류 발생: {}", e.getMessage(), e);
         }
     }
 
     private void saveMessageToDB(ChatMessageDto chatMessageDto) {
-        UserInfo userInfo = userInfoRepository.findById(chatMessageDto.getSender())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            UserInfo userInfo = userInfoRepository.findById(chatMessageDto.getSender())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Store store = storeRepository.findById(chatMessageDto.getStoreId())
-                .orElseThrow(() -> new RuntimeException("Store not found"));
+            Store store = storeRepository.findById(chatMessageDto.getStoreId())
+                    .orElseThrow(() -> new RuntimeException("Store not found"));
 
-        Message message = new Message();
-        message.setUserInfo(userInfo);
-        message.setStore(store);
-        message.setContent(chatMessageDto.getMessage());
-        message.setTimestamp(java.time.LocalDateTime.now());
+            Message message = new Message();
+            message.setUserInfo(userInfo);
+            message.setStore(store);
+            message.setContent(chatMessageDto.getMessage());
+            message.setTimestamp(java.time.LocalDateTime.now());
 
-        chatRepository.save(message);
+            chatRepository.save(message);
+        } catch (Exception e) {
+            log.error("DB 저장 중 오류 발생: {}", e.getMessage(), e);
+        }
     }
 }
