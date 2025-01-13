@@ -78,7 +78,7 @@ public class ReservationService {
 
         // 대기열 크기 제한 확인
         Long queueSize = redisTemplate.opsForList().size(queueKey);
-        int maxQueueSize = 500; // 대기열 최대 크기
+        int maxQueueSize = 10000; // 대기열 최대 크기 500->10000
         if (queueSize != null && queueSize >= maxQueueSize) {
             res = "대기열이 가득 찼습니다.";
             log.info("대기열이 가득 찼습니다.");
@@ -145,6 +145,8 @@ public class ReservationService {
                 "userQueue", queue
         );*/
     }
+
+    /*
     //예약 처리 스케줄러
     //@Scheduled(fixedRate = 5000) // 5초마다 실행
     public void processQueue() {
@@ -169,7 +171,6 @@ public class ReservationService {
             log.error("Error during Redis SCAN operation", e);
         }
     }
-
     private void processSlotKey(String slotKey) {
         try {
             // 키에서 storeId, date, timeSlot 추출
@@ -231,7 +232,7 @@ public class ReservationService {
             }
         }
     }
-
+*/
     //예약 정보 상세 조회
     public Optional<Reservation> getReservation(Long reservationId){
         //현재 로그인한 사용자 권한 확인
