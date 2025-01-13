@@ -21,4 +21,8 @@ public class ChatService {
                 .orElseThrow(() -> new IllegalArgumentException("Store not found with id: " + storeId));
         return chatRepository.findByStore(store);
     }
+
+    public void saveMessage(Message message) {
+        chatRepository.save(message);
+    }
 }
