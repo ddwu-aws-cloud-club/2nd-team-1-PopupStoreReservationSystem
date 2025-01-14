@@ -26,6 +26,11 @@ public class ChatMessageSubscriber implements MessageListener {
     public void onMessage(org.springframework.data.redis.connection.Message message, byte[] pattern) {
         String channel = new String(pattern);
         String receivedMessage = new String(message.getBody());
+
+        // 불필요한 공백, 줄 바꿈 문자 등을 제거
+        receivedMessage = receivedMessage.trim(); // 앞뒤 공백 제거
+        receivedMessage = receivedMessage.replaceAll("[\\r\\n]+", ""); // 줄 바꿈 문자 제거
+
         log.info("Received message: {} from channel: {}", receivedMessage, channel);
 
         try {
