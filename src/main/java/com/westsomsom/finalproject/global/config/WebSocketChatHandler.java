@@ -55,7 +55,7 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 
         // 세션 추가
         storeSessions.computeIfAbsent(storeId, k -> new HashSet<>()).add(session);
-        session.sendMessage(new TextMessage("WebSocket 연결 완료"));
+        session.sendMessage(new TextMessage("WebSocket 연결 완료 및 기존 메시지 불러오기 완료"));
     }
 
     @Override
