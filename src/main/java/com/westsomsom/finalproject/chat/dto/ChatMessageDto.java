@@ -7,7 +7,7 @@ import lombok.*;
 @Builder
 @Getter
 @Setter
-@AllArgsConstructor
+//@AllArgsConstructor
 @NoArgsConstructor
 public class ChatMessageDto {
     // 메시지 타입 : 입장, 채팅, 퇴장
