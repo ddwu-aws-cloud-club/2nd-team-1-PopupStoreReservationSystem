@@ -10,7 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 public class ChatMessageDto {
     // 메시지  타입 : 입장, 채팅, 퇴장
-    @JsonFormat(shape = JsonFormat.Shape.STRING) // enum을 String으로 직렬화
     public enum MessageType{
         JOIN, TALK, LEAVE
     }

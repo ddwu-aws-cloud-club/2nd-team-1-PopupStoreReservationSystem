@@ -35,7 +35,7 @@ public class ChatMessageSubscriber implements MessageListener {
             log.debug("Deserialized ChatMessageDto: {}", chatMessageDto);
 
             // DB 저장
-            saveMessageToDB(chatMessageDto);
+//            saveMessageToDB(chatMessageDto);
             log.info("Redis Subscriber 메시지 처리 완료: {}", chatMessageDto);
         } catch (com.fasterxml.jackson.databind.exc.MismatchedInputException e) {
             // JSON 역직렬화 오류
