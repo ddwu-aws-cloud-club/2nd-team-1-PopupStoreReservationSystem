@@ -30,9 +30,9 @@ public class ChatMessageSubscriber implements MessageListener {
 
         try {
             // Redis에서 전달받은 메시지를 처리
-            log.debug("Attempting to deserialize the received message into ChatMessageDto: {}", receivedMessage);
+            log.debug("수신된 메시지를 ChatMessageDto로 역직렬화하려고 시도하는 중: {}", receivedMessage);
             ChatMessageDto chatMessageDto = mapper.readValue(receivedMessage, ChatMessageDto.class);
-            log.debug("Deserialized ChatMessageDto: {}", chatMessageDto);
+            log.debug("역직렬화된 ChatMessageDto: {}", chatMessageDto);
 
             // DB 저장
 //            saveMessageToDB(chatMessageDto);
@@ -40,6 +40,7 @@ public class ChatMessageSubscriber implements MessageListener {
         } catch (com.fasterxml.jackson.databind.exc.MismatchedInputException e) {
             // JSON 역직렬화 오류
             log.error("JSON 역직렬화 오류 발생: 잘못된 JSON 형식입니다. 메시지: {}", receivedMessage, e);
+            log.error("예외 세부 정보: ", e); // 예외의 세부 정보를 추가로 로깅
         } catch (Exception e) {
             // 다른 오류들에 대한 처리
             log.error("Redis Subscriber 메시지 처리 중 오류 발생: {}", e.getMessage(), e);
