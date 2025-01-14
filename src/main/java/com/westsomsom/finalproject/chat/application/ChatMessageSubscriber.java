@@ -48,21 +48,29 @@ public class ChatMessageSubscriber implements MessageListener {
 
     private void saveMessageToDB(ChatMessageDto chatMessageDto) {
         try {
-            UserInfo userInfo = userInfoRepository.findById(chatMessageDto.getSender())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+            // senderId를 String으로 처리
+            String senderId = chatMessageDto.getSender();
+
+            UserInfo userInfo = userInfoRepository.findById(senderId)
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + senderId));
 
             Store store = storeRepository.findById(chatMessageDto.getStoreId())
-                    .orElseThrow(() -> new RuntimeException("Store not found"));
+                    .orElseThrow(() -> new RuntimeException("Store not found with id: " + chatMessageDto.getStoreId()));
 
-            Message message = new Message();
-            message.setUserInfo(userInfo);
-            message.setStore(store);
-            message.setContent(chatMessageDto.getMessage());
-            message.setTimestamp(java.time.LocalDateTime.now());
+            // Message 객체 생성
+            Message message = Message.builder()
+                    .userInfo(userInfo)
+                    .content(chatMessageDto.getMessage())
+                    .store(store)
+                    .timestamp(java.time.LocalDateTime.now())
+                    .build();
 
+            // DB 저장
             chatRepository.save(message);
+
+            log.info("Message saved to DB: {}", message);
         } catch (Exception e) {
-            log.error("DB 저장 중 오류 발생: {}", e.getMessage(), e);
+            log.error("Error saving message to DB: {}", e.getMessage(), e);
         }
     }
 }
