@@ -53,7 +53,8 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) throws Exception {
         log.info("메시지 수신: {}", textMessage.getPayload());
 
-        ChatMessageDto chatMessageDto = objectMapper.readValue(textMessage.getPayload(), ChatMessageDto.class);
+//        ChatMessageDto chatMessageDto = objectMapper.readValue(textMessage.getPayload(), ChatMessageDto.class);
+        ChatMessageDto chatMessageDto = objectMapper.convertValue(textMessage.getPayload(), ChatMessageDto.class);
 
         // ChatMessagePublisher를 통해 메시지를 Redis로 발행
         chatMessagePublisher.publish(textMessage.getPayload());
