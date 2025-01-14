@@ -1,7 +1,5 @@
 package com.westsomsom.finalproject.chat.dto;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Builder
