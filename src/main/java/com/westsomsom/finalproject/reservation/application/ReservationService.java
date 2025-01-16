@@ -260,7 +260,16 @@ public class ReservationService {
             int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
             availableSlots++;
             redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
-            redisTemplate.opsForSet().remove(uniqueUsersKey, reservation.getUser());
+            //redisTemplate.opsForSet().remove(uniqueUsersKey, reservation.getUser());
+            Boolean result = redisTemplate.execute((connection) -> {
+                return connection.sRem(uniqueUsersKey.getBytes(), reservation.getUser().getBytes()) > 0;
+            }, true);
+
+            if (Boolean.TRUE.equals(result)) {
+                log.info("✅ [예약 취소] 사용자 '{}'가 Redis Set에서 강제 제거됨.", reservation.getUser());
+            } else {
+                log.warn("🚨 [예약 취소] Redis Set에서 사용자 '{}' 제거 실패! uniqueUsersKey: {}", reservation.getUser(), uniqueUsersKey);
+            }
 
             log.info("예약이 취소되었습니다.");
         }else
