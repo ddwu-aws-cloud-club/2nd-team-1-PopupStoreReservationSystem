@@ -45,14 +45,16 @@ public class ReservationSubscriber implements MessageListener {
                 String parts3 = parts[3];
                 String userId = parts3.substring(0,parts[3].length()-1);
 
+                String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
                 String queueKey = "reservationQueue|" + storeId + "|" + date + "|" + timeSlot;
+                //String uniqueUsersKey = "uniqueUsers|" + storeId + "|" + date + "|" + timeSlot;
+
                 List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
                 if (queue == null || !queue.contains(userId)) {
                     log.warn("🚨 [중복 방지] 사용자 '{}'의 예약이 이미 처리되었음. (queueKey 없음)", userId);
-                    break LOOP;
+                    return;
                 }
 
-                String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
                 String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
                 int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
 
@@ -71,6 +73,13 @@ public class ReservationSubscriber implements MessageListener {
                     log.info("예약 완료: 사용자 {}", userId);
                     redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
                     log.info("Updated available slots: {} for {}", availableSlots, slotKey);
+
+                    Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, userId);
+                    if (queueRemovedCount > 0) {
+                        log.info("✅ [대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", userId);
+                    } else {
+                        log.warn("🚨 [대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
+                    }
 
                     break LOOP;
                 } else {
