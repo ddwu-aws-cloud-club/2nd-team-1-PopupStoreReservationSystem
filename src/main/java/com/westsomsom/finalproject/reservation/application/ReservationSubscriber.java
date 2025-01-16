@@ -34,7 +34,7 @@ public class ReservationSubscriber implements MessageListener {
         int maxAttempts = 5;
         int retryDelay = 100; // 시작 딜레이 (ms)
 
-        for (int attempts = 1; attempts <= maxAttempts; attempts++) {
+        LOOP:for (int attempts = 1; attempts <= maxAttempts; attempts++) {
             try {
                 String[] parts = message.split("\\|");
                 int storeId = Integer.parseInt(parts[0].replaceAll("[^0-9]", "").trim());
@@ -62,17 +62,24 @@ public class ReservationSubscriber implements MessageListener {
                     log.info("예약 완료: 사용자 {}", userId);
                     redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
                     log.info("Updated available slots: {} for {}", availableSlots, slotKey);
-                    break;
+                    String queueKey = "reservationQueue|" + storeId + "|" + date + "|" + timeSlot;
+                    Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, userId);
+                    if (queueRemovedCount > 0) {
+                        log.info("✅ [대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", userId);
+                    } else {
+                        log.warn("🚨 [대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
+                    }
+                    break LOOP;
                 } else {
                     log.info("예약이 마감되었습니다: 사용자 {}", userId);
-                    break;
+                    break LOOP;
                 }
             } catch (Exception e) {
                 log.error("예약 처리 실패. 재시도 시도: {}/{}", attempts, maxAttempts, e);
 
                 if (attempts == maxAttempts) {
                     log.error("최대 재시도 횟수 초과. 예약 처리 중단: {}", message);
-                    break;
+                    break LOOP;
                 }
 
                 try {

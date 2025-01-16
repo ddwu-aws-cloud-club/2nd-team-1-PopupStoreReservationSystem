@@ -10,10 +10,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,12 +31,6 @@ public class ReservationService {
     private static final String REDIS_QUEUE_KEY = "reservationQueue|";
     private static final String UNIQUE_USERS_KEY = "uniqueUsers|";
     private static final String AVAILABLE_SLOTS_KEY = "availableSlots|";
-
-
-    public boolean isUserInQueue(String queueKey, String userId) {
-        List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
-        return queue != null && queue.contains(userId);
-    }
 
     //예약 요청이 들어오면 예약 가능 시간인지 확인
     public boolean checkReservationTime(int storeId) {
@@ -95,6 +86,12 @@ public class ReservationService {
             res+="예약";
         } else {
             log.warn("🚨 [예약 불가] 예약 가능 슬롯이 0입니다.");
+            Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, memberId);
+            if (queueRemovedCount > 0) {
+                log.info("✅ [대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", memberId);
+            } else {
+                log.warn("🚨 [대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", memberId, queueKey);
+            }
             return "예약이 마감되었습니다.";
         }
 
