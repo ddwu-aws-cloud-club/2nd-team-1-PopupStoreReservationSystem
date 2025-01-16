@@ -13,13 +13,15 @@ public class RedirectFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
 
+        // HTTP 응답 객체 변환
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
-
+        // 기존 필터 체인 실행
         chain.doFilter(request, response);
 
-        // ALB가 반환한 301을 감지하여 308으로 변경
+        // ALB에서 301을 리턴하는 경우 이를 308로 변경
         if (httpServletResponse.getStatus() == HttpServletResponse.SC_MOVED_PERMANENTLY) {
-            httpServletResponse.setStatus(308);
+            httpServletResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
+            httpServletResponse.setHeader("Location", httpServletResponse.getHeader("Location")); // 리디렉트 주소 유지
         }
     }
 }
