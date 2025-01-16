@@ -49,8 +49,8 @@ public class ReservationSubscriber implements MessageListener {
                 String queueKey = "reservationQueue|" + storeId + "|" + date + "|" + timeSlot;
 
                 // 예약 가능한 슬롯 수 확인
-                String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
-                int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
+                //String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
+                //int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
 
                 List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
                 if (queue != null && queue.contains(userId)) {
@@ -74,8 +74,8 @@ public class ReservationSubscriber implements MessageListener {
                             .build());
 
                     log.info("✅ 예약 완료: 사용자 {}", userId);
-                    redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
-                    log.info("Updated available slots: {} for {}", availableSlots, slotKey);
+                    redisTemplate.opsForValue().decrement(slotKey);
+                    log.info("Updated available slots: {} for {}", redisTemplate.opsForValue().get(slotKey), slotKey);
 
                     break LOOP;
                 }else{
