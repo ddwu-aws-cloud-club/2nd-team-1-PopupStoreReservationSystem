@@ -40,7 +40,8 @@ public class ReservationSubscriber implements MessageListener {
                 int storeId = Integer.parseInt(parts[0].replaceAll("[^0-9]", "").trim());
                 String date = parts[1];
                 String timeSlot = parts[2];
-                String userId = parts[3].replaceAll("[^0-9]", "").trim();
+                String parts3 = parts[3];
+                String userId = parts3.substring(0,parts[3].length()-2);
 
                 String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
                 String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
