@@ -5,6 +5,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 
@@ -13,16 +16,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .requiresChannel(channel -> channel.anyRequest().requiresSecure()) // ✅ 모든 요청을 HTTPS로 리디렉트
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**")) // ✅ API 엔드포인트는 CSRF 보호 제외
+                .csrf(csrf -> csrf.disable())  // 테스트 후 필요하면 다시 활성화
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/", "/login", "/oauth2/**", "/api/**").permitAll() // ✅ 모든 API 요청 허용
+                                .requestMatchers("/","/api/**").permitAll() // ✅ 모든 API 요청 허용
                                 .anyRequest().authenticated() // ✅ 나머지 요청은 인증 필요
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 );
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.addAllowedOriginPattern("*"); // ✅ 모든 도메인 허용
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*"); // ✅ 모든 HTTP 메서드 허용
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }
