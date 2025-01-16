@@ -52,7 +52,8 @@ public class ReservationSubscriber implements MessageListener {
                 String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
                 int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
 
-                if (availableSlots > 0) {
+                List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
+                if (queue != null && queue.contains(userId)) {
                     Store store = storeService.findById(storeId)
                             .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
 
@@ -73,10 +74,11 @@ public class ReservationSubscriber implements MessageListener {
                         log.info("✅ [대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", userId);
                     } else {
                         log.warn("🚨 [대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
+                        break LOOP;
                     }
                     break LOOP;
-                } else {
-                    log.info("예약이 마감되었습니다: 사용자 {}", userId);
+                }else{
+                    log.info("이미 예약한 사용자입니다.");
                     break LOOP;
                 }
             } catch (Exception e) {

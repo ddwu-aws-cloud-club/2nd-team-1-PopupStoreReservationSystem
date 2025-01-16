@@ -85,7 +85,7 @@ public class ReservationService {
             log.info("✅ [Redis] 사용자 '{}' 추가 완료! uniqueUsersKey: {}", memberId, uniqueUsersKey);
             res+="예약";
         } else {
-            log.warn("🚨 [예약 불가] 예약 가능 슬롯이 0입니다.");
+            log.info("🚨 [예약 불가] 예약이 마감되었습니다.");
             Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, memberId);
             if (queueRemovedCount > 0) {
                 log.info("✅ [대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", memberId);
