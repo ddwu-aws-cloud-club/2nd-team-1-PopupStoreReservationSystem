@@ -256,8 +256,8 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new EntityNotFoundException("Reservation not found for ID: " + reservationId));
 
-        String slotKey = AVAILABLE_SLOTS_KEY + reservation.getStore().getStoreId() + ":" + reservation.getDate() + ":" + reservation.getTimeSlot();
-        String uniqueUsersKey = UNIQUE_USERS_KEY + reservation.getStore().getStoreId() + ":" + reservation.getDate() + ":" + reservation.getTimeSlot();
+        String slotKey = AVAILABLE_SLOTS_KEY + reservation.getStore().getStoreId() + "|" + reservation.getDate() + "|" + reservation.getTimeSlot();
+        String uniqueUsersKey = UNIQUE_USERS_KEY + reservation.getStore().getStoreId() + "|" + reservation.getDate() + "|" + reservation.getTimeSlot();
 
         if (Boolean.TRUE.equals(redisTemplate.hasKey(slotKey))) {
             reservationRepository.updateStatus(reservationId, ReservationStatus.CANCELED);
