@@ -40,7 +40,7 @@ public class ReservationSubscriber implements MessageListener {
                 int storeId = Integer.parseInt(parts[0].replaceAll("[^0-9]", "").trim());
                 String date = parts[1];
                 String timeSlot = parts[2];
-                String userId = parts[3];
+                String userId = parts[3].replaceAll("[^0-9]", "").trim();
 
                 String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
                 String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
@@ -61,10 +61,10 @@ public class ReservationSubscriber implements MessageListener {
                     log.info("예약 완료: 사용자 {}", userId);
                     redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
                     log.info("Updated available slots: {} for {}", availableSlots, slotKey);
-                    return;
+                    break;
                 } else {
                     log.info("예약이 마감되었습니다: 사용자 {}", userId);
-                    return;
+                    break;
                 }
             } catch (Exception e) {
                 log.error("예약 처리 실패. 재시도 시도: {}/{}", attempts, maxAttempts, e);
