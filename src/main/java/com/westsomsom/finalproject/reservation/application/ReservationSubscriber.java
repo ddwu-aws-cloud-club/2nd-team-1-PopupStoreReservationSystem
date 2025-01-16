@@ -52,7 +52,7 @@ public class ReservationSubscriber implements MessageListener {
                 List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
                 if (queue == null || !queue.contains(userId)) {
                     log.warn("🚨 [중복 방지] 사용자 '{}'의 예약이 이미 처리되었음. (queueKey 없음)", userId);
-                    return;
+                    break LOOP;
                 }
 
                 String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
