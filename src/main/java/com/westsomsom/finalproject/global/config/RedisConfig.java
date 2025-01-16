@@ -3,39 +3,36 @@ package com.westsomsom.finalproject.global.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.util.Arrays;
+
 @Configuration
 public class RedisConfig {
-    @Value("${spring.data.redis.host}")
-    private String ELASTICACHE_ENDPOINT; // ElastiCache 엔드포인트 입력
-    @Value("${spring.data.redis.port}")
-    private int ELASTICACHE_PORT; // 기본 Redis 포트
 
-    @Bean // TLS 활성화된 Redis 설정
+    @Value("${spring.data.redis.cluster.nodes}")
+    private String redisClusterNodes; // 클러스터 노드들 (쉼표로 구분된 리스트)
+
+    @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        // RedisStandaloneConfiguration에 호스트와 포트 설정
-        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
-        redisStandaloneConfiguration.setHostName(ELASTICACHE_ENDPOINT);
-        redisStandaloneConfiguration.setPort(ELASTICACHE_PORT);
+        // Redis 클러스터 구성 설정
+        RedisClusterConfiguration clusterConfiguration = new RedisClusterConfiguration(Arrays.asList(redisClusterNodes.split(",")));
 
-        // LettuceClientConfiguration에 TLS 활성화
+        // TLS(SSL) 활성화 설정 추가
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .useSsl() // TLS 활성화
+                .useSsl()  // 🔥 TLS(SSL) 활성화
                 .build();
 
-        return new LettuceConnectionFactory(redisStandaloneConfiguration, clientConfig);
+        return new LettuceConnectionFactory(clusterConfiguration, clientConfig);
     }
 
     @Bean
-    @Primary
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
@@ -44,4 +41,3 @@ public class RedisConfig {
         return template;
     }
 }
-
