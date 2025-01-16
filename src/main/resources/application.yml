@@ -52,7 +52,6 @@ spring:
     include: local
 
 server:
-  port: 80
   servlet:
     encoding:
       charset: UTF-8
