@@ -37,7 +37,7 @@ public class ReservationSubscriber implements MessageListener {
         for (int attempts = 1; attempts <= maxAttempts; attempts++) {
             try {
                 String[] parts = message.split("\\|");
-                int storeId = Integer.parseInt(parts[0].replaceAll("\"", ""));
+                int storeId = Integer.parseInt(parts[0].replaceAll("[^0-9]", "").trim());
                 String date = parts[1];
                 String timeSlot = parts[2];
                 String userId = parts[3];
