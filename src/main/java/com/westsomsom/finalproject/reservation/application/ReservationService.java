@@ -61,7 +61,7 @@ public class ReservationService {
         String slotKey = AVAILABLE_SLOTS_KEY + storeId + "|" + date + "|" + timeSlot;
 
         // Redis Set에서 사용자 중복 확인
-        Boolean isAlreadyReserved = redisTemplate.opsForSet().isMember(uniqueUsersKey, memberId);
+        Boolean isAlreadyReserved = redisTemplate.opsForHash().hasKey(uniqueUsersKey, memberId);
         if (Boolean.TRUE.equals(isAlreadyReserved)) {
             res = "사용자가 이미 예약 요청을 보냈습니다: "+memberId;
             log.info("사용자가 이미 예약 요청을 보냈습니다: {}", memberId);
@@ -90,13 +90,12 @@ public class ReservationService {
         log.info("🔍 [예약 가능 슬롯 확인] 현재 슬롯 수: {}", availableSlots);
 
         if (availableSlots > 0) {
-            Long addResult = redisTemplate.opsForSet().add(uniqueUsersKey, memberId);
-            if (addResult > 0) {
-                log.info("✅ [Redis] 사용자 '{}' 추가 완료! uniqueUsersKey: {}", memberId, uniqueUsersKey);
-            } else {
-                log.warn("🚨 [Redis] 사용자 '{}' 추가 실패! uniqueUsersKey: {}", memberId, uniqueUsersKey);
-            }
-            res+="예약 성공";
+            redisTemplate.opsForHash().put(uniqueUsersKey, memberId, "1");
+            log.info("✅ [Redis] 사용자 '{}' 추가 완료! uniqueUsersKey: {}", memberId, uniqueUsersKey);
+            res+="예약";
+        } else {
+            log.warn("🚨 [예약 불가] 예약 가능 슬롯이 0입니다.");
+            return "예약이 마감되었습니다.";
         }
 
         // Redis List 사용. 대기열에 사용자 추가
@@ -257,31 +256,30 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new EntityNotFoundException("Reservation not found for ID: " + reservationId));
 
-        String slotKey =  AVAILABLE_SLOTS_KEY + reservation.getStore().getStoreId() + "|" + reservation.getDate() + "|" + reservation.getTimeSlot();
-        String uniqueUsersKey = UNIQUE_USERS_KEY + reservation.getStore().getStoreId() + "|" + reservation.getDate() + "|" + reservation.getTimeSlot();
+        String slotKey = AVAILABLE_SLOTS_KEY + reservation.getStore().getStoreId() + ":" + reservation.getDate() + ":" + reservation.getTimeSlot();
+        String uniqueUsersKey = UNIQUE_USERS_KEY + reservation.getStore().getStoreId() + ":" + reservation.getDate() + ":" + reservation.getTimeSlot();
 
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(slotKey))){
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(slotKey))) {
             reservationRepository.updateStatus(reservationId, ReservationStatus.CANCELED);
 
+            // 예약 가능 슬롯 증가
             String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
             int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
             availableSlots++;
             redisTemplate.opsForValue().set(slotKey, String.valueOf(availableSlots));
-            //redisTemplate.opsForSet().remove(uniqueUsersKey, reservation.getUser());
-            Boolean result = redisTemplate.execute((connection) -> {
-                return connection.sRem(uniqueUsersKey.getBytes(), reservation.getUser().getBytes()) > 0;
-            }, true);
 
-            if (Boolean.TRUE.equals(result)) {
-                log.info("✅ [예약 취소] 사용자 '{}'가 Redis Set에서 강제 제거됨.", reservation.getUser());
+            // Redis에서 사용자 제거 (HDEL 사용)
+            Long removedCount = redisTemplate.opsForHash().delete(uniqueUsersKey, reservation.getUser());
+            if (removedCount > 0) {
+                log.info("✅ [예약 취소] 사용자 '{}'가 Redis Hash에서 제거됨.", reservation.getUser());
             } else {
-                log.warn("🚨 [예약 취소] Redis Set에서 사용자 '{}' 제거 실패! uniqueUsersKey: {}", reservation.getUser(), uniqueUsersKey);
+                log.warn("🚨 [예약 취소] 사용자 '{}' 제거 실패! uniqueUsersKey: {}", reservation.getUser(), uniqueUsersKey);
             }
-
-            log.info("예약이 취소되었습니다.");
-        }else
-            log.info("예약 취소 가능 기간이 아닙니다.");
+        } else {
+            log.info("🚨 [예약 취소] 예약 취소 가능 기간이 아닙니다.");
+        }
     }
+
 
     public List<Reservation> getReservationList(String user) {
         return reservationRepository.findByUser(user);
