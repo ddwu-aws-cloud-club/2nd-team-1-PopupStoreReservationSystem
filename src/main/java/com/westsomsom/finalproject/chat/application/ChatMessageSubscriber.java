@@ -37,33 +37,41 @@ public class ChatMessageSubscriber implements MessageListener {
 
     private void processMessage(String receivedMessage) {
         try {
-            log.debug("수신된 메시지를 JSON 트리로 파싱 중: {}", receivedMessage);
-            JsonNode rootNode = mapper.readTree(receivedMessage);  // JSON을 JsonNode로 읽음
+            log.debug("Raw received message: {}", receivedMessage);
 
-            // JSON 트리 구조를 로그로 출력
+            JsonNode rootNode = mapper.readTree(receivedMessage);
+
+            // JSON이 이중으로 감싸져 있는지 확인
+            if (rootNode.isTextual()) {
+                log.debug("JSON이 String으로 감싸져 있음, 다시 파싱 수행");
+                rootNode = mapper.readTree(rootNode.asText());
+            }
+
             log.debug("파싱된 JSON 트리: {}", rootNode);
 
-            // 필요한 필드 추출
-            JsonNode messageTypeNode = rootNode.get("messageType");
-            JsonNode storeIdNode = rootNode.get("storeId");
-            JsonNode senderNode = rootNode.get("sender");
-            JsonNode messageNode = rootNode.get("message");
+            // 필드 존재 여부 검증 후 처리
+            if (!rootNode.has("messageType") || !rootNode.has("storeId") ||
+                    !rootNode.has("sender") || !rootNode.has("message")) {
+                log.error("필수 필드가 존재하지 않음: {}", rootNode);
+                return;
+            }
+
+            // JSON 필드 추출
+            String messageType = rootNode.get("messageType").asText();
+            int storeId = rootNode.get("storeId").asInt();
+            String sender = rootNode.get("sender").asText();
+            String message = rootNode.get("message").asText();
 
             log.debug("messageType: {}, storeId: {}, sender: {}, message: {}",
-                    messageTypeNode.asText(),
-                    storeIdNode.asInt(),
-                    senderNode.asText(),
-                    messageNode.asText());
+                    messageType, storeId, sender, message);
 
-            // 해당 값들이 잘 파싱되었는지 확인 후, ChatMessageDto로 역직렬화
+            // ChatMessageDto로 변환
             ChatMessageDto chatMessageDto = mapper.treeToValue(rootNode, ChatMessageDto.class);
             log.debug("역직렬화된 ChatMessageDto: {}", chatMessageDto);
 
             // Redis에 메시지 저장
             saveMessageToRedis(chatMessageDto);
 
-            // 메시지를 DB에 저장
-            // saveMessageToDB(chatMessageDto);
             log.info("Redis Subscriber 메시지 처리 완료: {}", chatMessageDto);
         } catch (com.fasterxml.jackson.databind.exc.MismatchedInputException e) {
             log.error("JSON 역직렬화 실패: {}", receivedMessage, e);
