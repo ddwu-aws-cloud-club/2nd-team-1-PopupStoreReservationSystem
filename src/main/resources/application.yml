@@ -37,14 +37,17 @@ spring:
       enabled: true
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: 6379
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-
+      cluster:
+        nodes: ${REDIS_HOST}:6379  # 클러스터 엔드포인트
+        lettuce:
+          cluster:
+            refresh:
+              adaptive: true
+              period: 30s
+          pool:
+            max-active: 8
+            max-idle: 8
+            min-idle: 0
   profiles:
     include: local
 

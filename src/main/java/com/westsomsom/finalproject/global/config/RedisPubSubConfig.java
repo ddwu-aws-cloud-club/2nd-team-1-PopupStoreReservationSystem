@@ -12,6 +12,8 @@ import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 
+import java.util.concurrent.Executors;
+
 @Configuration
 public class RedisPubSubConfig {
 
@@ -22,6 +24,9 @@ public class RedisPubSubConfig {
             MessageListenerAdapter chatListenerAdapter) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
+
+        // 클러스터 환경에서 모든 노드를 대상으로 메시지 리스너 등록
+        container.setTaskExecutor(Executors.newFixedThreadPool(10)); // 병렬 처리 가능하도록 설정
 
         // 예약 관련 리스너 등록
         container.addMessageListener(listenerAdapter, new ChannelTopic("reservationChannel"));
