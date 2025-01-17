@@ -11,6 +11,7 @@ import com.westsomsom.finalproject.user.domain.UserInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -21,6 +22,7 @@ public class ChatMessageSubscriber implements MessageListener {
     private final ChatRepository chatRepository;
     private final UserInfoRepository userInfoRepository;
     private final StoreRepository storeRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public void onMessage(org.springframework.data.redis.connection.Message message, byte[] pattern) {
@@ -38,6 +40,9 @@ public class ChatMessageSubscriber implements MessageListener {
             ChatMessageDto chatMessageDto = mapper.readValue(receivedMessage, ChatMessageDto.class);
             log.debug("역직렬화된 ChatMessageDto: {}", chatMessageDto);
 
+            // Redis에 메시지 저장
+            saveMessageToRedis(chatMessageDto);
+
             // 메시지를 DB에 저장
             // saveMessageToDB(chatMessageDto);
             log.info("Redis Subscriber 메시지 처리 완료: {}", chatMessageDto);
@@ -45,6 +50,21 @@ public class ChatMessageSubscriber implements MessageListener {
             log.error("JSON 역직렬화 실패: {}", receivedMessage, e);
         } catch (Exception e) {
             log.error("Redis Subscriber 메시지 처리 중 오류 발생: {}", e.getMessage(), e);
+        }
+    }
+
+    private void saveMessageToRedis(ChatMessageDto chatMessageDto) {
+        try {
+            // Redis에 저장할 키 생성: "Chat|<storeId>|<userId>|content"
+            String redisKey = "Chat|" + chatMessageDto.getStoreId() + "|" + chatMessageDto.getSender() + "|"
+                    + chatMessageDto.getMessage();
+
+            // 메시지를 Redis에 저장
+            redisTemplate.opsForValue().set(redisKey, chatMessageDto.getMessage());
+
+            log.info("Redis에 채팅 메시지가 저장됨: key = {}", redisKey);
+        } catch (Exception e) {
+            log.error("Redis에 채팅 메시지를 저장하는 데 오류 발생: {}", e.getMessage(), e);
         }
     }
 
