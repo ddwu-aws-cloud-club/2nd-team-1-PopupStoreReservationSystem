@@ -1,5 +1,6 @@
 package com.westsomsom.finalproject.chat.application;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.westsomsom.finalproject.chat.dao.ChatRepository;
 import com.westsomsom.finalproject.chat.domain.Message;
@@ -36,8 +37,26 @@ public class ChatMessageSubscriber implements MessageListener {
 
     private void processMessage(String receivedMessage) {
         try {
-            log.debug("수신된 메시지를 ChatMessageDto로 역직렬화하려고 시도하는 중: {}", receivedMessage);
-            ChatMessageDto chatMessageDto = mapper.readValue(receivedMessage, ChatMessageDto.class);
+            log.debug("수신된 메시지를 JSON 트리로 파싱 중: {}", receivedMessage);
+            JsonNode rootNode = mapper.readTree(receivedMessage);  // JSON을 JsonNode로 읽음
+
+            // JSON 트리 구조를 로그로 출력
+            log.debug("파싱된 JSON 트리: {}", rootNode);
+
+            // 필요한 필드 추출
+            JsonNode messageTypeNode = rootNode.get("messageType");
+            JsonNode storeIdNode = rootNode.get("storeId");
+            JsonNode senderNode = rootNode.get("sender");
+            JsonNode messageNode = rootNode.get("message");
+
+            log.debug("messageType: {}, storeId: {}, sender: {}, message: {}",
+                    messageTypeNode.asText(),
+                    storeIdNode.asInt(),
+                    senderNode.asText(),
+                    messageNode.asText());
+
+            // 해당 값들이 잘 파싱되었는지 확인 후, ChatMessageDto로 역직렬화
+            ChatMessageDto chatMessageDto = mapper.treeToValue(rootNode, ChatMessageDto.class);
             log.debug("역직렬화된 ChatMessageDto: {}", chatMessageDto);
 
             // Redis에 메시지 저장
