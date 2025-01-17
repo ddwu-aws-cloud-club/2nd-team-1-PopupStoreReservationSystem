@@ -27,27 +27,23 @@ public class ChatMessageSubscriber implements MessageListener {
         String channel = new String(pattern);
         String receivedMessage = new String(message.getBody());
 
-        // 불필요한 공백, 줄 바꿈 문자 등을 제거
-        receivedMessage = receivedMessage.trim(); // 앞뒤 공백 제거
-        receivedMessage = receivedMessage.replaceAll("[\\r\\n]+", ""); // 줄 바꿈 문자 제거
-
         log.info("Received message: {} from channel: {}", receivedMessage, channel);
 
+        processMessage(receivedMessage);
+    }
+
+    private void processMessage(String receivedMessage) {
         try {
-            // Redis에서 전달받은 메시지를 처리
             log.debug("수신된 메시지를 ChatMessageDto로 역직렬화하려고 시도하는 중: {}", receivedMessage);
             ChatMessageDto chatMessageDto = mapper.readValue(receivedMessage, ChatMessageDto.class);
             log.debug("역직렬화된 ChatMessageDto: {}", chatMessageDto);
 
-            // DB 저장
-//            saveMessageToDB(chatMessageDto);
+            // 메시지를 DB에 저장
+            // saveMessageToDB(chatMessageDto);
             log.info("Redis Subscriber 메시지 처리 완료: {}", chatMessageDto);
         } catch (com.fasterxml.jackson.databind.exc.MismatchedInputException e) {
-            // JSON 역직렬화 오류
-            log.error("JSON 역직렬화 오류 발생: 잘못된 JSON 형식입니다. 메시지: {}", receivedMessage, e);
-            log.error("예외 세부 정보: ", e); // 예외의 세부 정보를 추가로 로깅
+            log.error("JSON 역직렬화 실패: {}", receivedMessage, e);
         } catch (Exception e) {
-            // 다른 오류들에 대한 처리
             log.error("Redis Subscriber 메시지 처리 중 오류 발생: {}", e.getMessage(), e);
         }
     }
