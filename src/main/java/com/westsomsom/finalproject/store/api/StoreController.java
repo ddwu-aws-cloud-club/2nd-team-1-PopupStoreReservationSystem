@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -44,27 +43,28 @@ public class StoreController {
                                          @RequestParam(value = "start", required = false) LocalDate start,
                                          @RequestParam(value = "fin", required = false) LocalDate fin,
                                          @RequestParam(value = "loc", required = false) String loc,
-                                         @RequestParam(value = "page", defaultValue = "0") Integer page
+                                         @RequestParam(value = "id", required = false) Integer storeId
     ) {
 
         SearchRequestDto searchRequestDto = SearchRequestDto.builder()
+                .storeId(storeId)
                 .storeName(name)
                 .startDate(start)
                 .finDate(fin)
                 .storeLoc(loc)
                 .build();
 
-        Page<SearchResponseDto> storeList = storeService.searchStore(searchRequestDto, PageRequest.of(page,20));
+        List<SearchResponseDto> storeList = storeService.searchStore(searchRequestDto);
 
-        return ResponseEntity.ok().body(storeList.getContent());
+        return ResponseEntity.ok().body(storeList);
     }
 
     @GetMapping("/api/search/category")
     public ResponseEntity<?> searchStoreCategory(@RequestParam(value = "category", required = false) String category,
-                                                 @RequestParam(value = "page", defaultValue = "0") Integer page
+                                                 @RequestParam(value = "id", required = false) Integer storeId
     ) {
-        Page<SearchResponseDto> storeList = storeService.searchStoreCategory(category, PageRequest.of(page,20));
-        return ResponseEntity.ok().body(storeList.getContent());
+        List<SearchResponseDto> storeList = storeService.searchStoreCategory(category, storeId);
+        return ResponseEntity.ok().body(storeList);
     }
 
     //팝업 스토어 상세정보

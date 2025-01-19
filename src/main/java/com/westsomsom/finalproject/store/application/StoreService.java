@@ -5,11 +5,12 @@ import com.westsomsom.finalproject.store.domain.Store;
 import com.westsomsom.finalproject.store.dto.SearchRequestDto;
 import com.westsomsom.finalproject.store.dto.SearchResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -27,12 +28,12 @@ public class StoreService {
         return storeRepository.findStoresNoOffset(lastStoreId, pageable);
     }
 
-    public Page<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto, Pageable pageable) {
-        return storeRepository.searchStore(searchRequestDto, pageable);
+    public List<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto) {
+        return storeRepository.searchStore(searchRequestDto);
     }
 
-    public Page<SearchResponseDto> searchStoreCategory(String category, Pageable pageable) {
-        return storeRepository.searchStoreCategory(category, pageable);
+    public List<SearchResponseDto> searchStoreCategory(String category, Integer storeId) {
+        return storeRepository.searchStoreCategory(category, storeId);
     }
 
     public Optional<Store> findById(int storeId){
