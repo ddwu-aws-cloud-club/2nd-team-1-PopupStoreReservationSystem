@@ -1,7 +1,7 @@
 package com.westsomsom.finalproject.store.dao;
 
-import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.QBean;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -63,8 +63,8 @@ public class StoreCustomRepositoryImpl implements StoreCustomRepository{
         return PageableExecutionUtils.getPage(storeList, pageable, countQuery::fetchOne);
     }
 
-    private ConstructorExpression<SearchResponseDto> searchResponseDtoConstructor() {
-        return Projections.constructor(SearchResponseDto.class,
+    private QBean<SearchResponseDto> searchResponseDtoConstructor() {
+        return Projections.fields(SearchResponseDto.class,
                 store.storeName,
                 store.storeBio,
                 store.startDate,
