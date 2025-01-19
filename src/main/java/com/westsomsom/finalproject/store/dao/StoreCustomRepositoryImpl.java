@@ -8,8 +8,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.westsomsom.finalproject.store.dto.SearchRequestDto;
 import com.westsomsom.finalproject.store.dto.SearchResponseDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
 import java.time.LocalDate;
@@ -22,45 +20,29 @@ public class StoreCustomRepositoryImpl implements StoreCustomRepository{
 
     private final JPAQueryFactory queryFactory;
 
-    public Page<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto, Pageable pageable) {
-        List<SearchResponseDto> storeList = queryFactory
+    public List<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto) {
+        return queryFactory
                 .select(searchResponseDtoConstructor())
                 .from(store)
-                .where(storeNameContains(searchRequestDto.getStoreName()),
+                .where(storeIdGt(searchRequestDto.getStoreId()),
+                        storeNameContains(searchRequestDto.getStoreName()),
                         startDateGoe(searchRequestDto.getStartDate()),
                         finDateGoe(searchRequestDto.getFinDate()),
                         storeLocContains(searchRequestDto.getStoreLoc()))
-                .limit(pageable.getPageSize())
-                .offset(pageable.getOffset())
+                .orderBy(store.storeId.asc())
+                .limit(20)
                 .fetch();
-
-        JPAQuery<Long> countQuery = queryFactory
-                .select(store.count())
-                .from(store)
-                .where(storeNameContains(searchRequestDto.getStoreName()),
-                        startDateGoe(searchRequestDto.getStartDate()),
-                        finDateGoe(searchRequestDto.getFinDate()),
-                        storeLocContains(searchRequestDto.getStoreLoc())
-                );
-
-        return PageableExecutionUtils.getPage(storeList, pageable, countQuery::fetchOne);
     }
 
-    public Page<SearchResponseDto> searchStoreCategory(String category, Pageable pageable) {
-        List<SearchResponseDto> storeList = queryFactory
+    public List<SearchResponseDto> searchStoreCategory(String category, Integer storeId) {
+        return queryFactory
                 .select(searchResponseDtoConstructor())
                 .from(store)
-                .where(storeCatagoryEq(category))
-                .limit(pageable.getPageSize())
-                .offset(pageable.getOffset())
+                .where(storeIdGt(storeId),
+                        storeCatagoryEq(category))
+                .orderBy(store.storeId.asc())
+                .limit(20)
                 .fetch();
-
-        JPAQuery<Long> countQuery = queryFactory
-                .select(store.count())
-                .from(store)
-                .where(storeCatagoryEq(category));
-
-        return PageableExecutionUtils.getPage(storeList, pageable, countQuery::fetchOne);
     }
 
     private QBean<SearchResponseDto> searchResponseDtoConstructor() {
@@ -72,6 +54,14 @@ public class StoreCustomRepositoryImpl implements StoreCustomRepository{
                 store.storeCategory,
                 store.storeLoc
         );
+    }
+
+    private BooleanExpression storeIdGt(Integer storeId) {
+        if(storeId == null) {
+            return null;
+        }
+
+        return store.storeId.gt(storeId);
     }
 
     private BooleanExpression storeNameContains(String storeName) {
