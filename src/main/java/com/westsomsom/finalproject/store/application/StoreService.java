@@ -7,6 +7,7 @@ import com.westsomsom.finalproject.store.dto.SearchResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,8 +19,12 @@ public class StoreService {
 
     private final StoreRepository storeRepository;
 
-    public Page<Store> getAllStores(Pageable pageable) {
-        return storeRepository.getAllStores(pageable);
+//    public Page<Store> getAllStores(Pageable pageable) {
+//        return storeRepository.getAllStores(pageable);
+//    }
+
+    public Slice<Store> getAllStoresNoOffset(Integer lastStoreId, Pageable pageable) {
+        return storeRepository.findStoresNoOffset(lastStoreId, pageable);
     }
 
     public Page<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto, Pageable pageable) {

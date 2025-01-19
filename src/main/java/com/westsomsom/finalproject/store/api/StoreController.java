@@ -7,6 +7,7 @@ import com.westsomsom.finalproject.store.dto.SearchResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,12 +26,18 @@ public class StoreController {
     private final StoreService storeService;
 
     @GetMapping("/api/home")
-    public ResponseEntity<Page<Store>> getAllStores(
-            @RequestParam(value = "page", defaultValue = "0") Integer page
+    public ResponseEntity<Slice<Store>> getAllStores(
+            @RequestParam(value = "lastStoreId", required = false) Integer lastStoreId
     ) {
-        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, 20));
+        Slice<Store> stores = storeService.getAllStoresNoOffset(lastStoreId, PageRequest.of(0, 20));
         return ResponseEntity.ok(stores);
     }
+//    public ResponseEntity<Page<Store>> getAllStores(
+//            @RequestParam(value = "page", defaultValue = "0") Integer page
+//    ) {
+//        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, 20));
+//        return ResponseEntity.ok(stores);
+//    }
 
     @GetMapping("/api/search")
     public ResponseEntity<?> searchStore(@RequestParam(value = "name", required = false) String name,
