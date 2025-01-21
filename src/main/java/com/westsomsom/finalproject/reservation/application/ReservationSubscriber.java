@@ -43,6 +43,71 @@ public class ReservationSubscriber implements MessageListener {
                 String date = parts[1];
                 String timeSlot = parts[2];
                 String parts3 = parts[3];
+                String userId = parts3.substring(0, parts[3].length() - 1);
+
+                String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
+                String queueKey = "reservationQueue|" + storeId + "|" + date + "|" + timeSlot;
+                String uniqueUsersKey = "uniqueUsers|" + storeId + "|" + date + "|" + timeSlot;
+
+                // 사용자 중복 여부 확인 (해시에 존재하는지 체크)
+                Boolean isUserAlreadyReserved = redisTemplate.opsForHash().hasKey(uniqueUsersKey, userId);
+                if (Boolean.TRUE.equals(isUserAlreadyReserved)) {
+                    log.info("🚨 이미 예약한 사용자입니다. userId: {}", userId);
+                    break LOOP;
+                }
+
+                Store store = storeService.findById(storeId)
+                        .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
+
+                Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, userId);
+                if (queueRemovedCount > 0) {
+                    log.info("✅ [대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", userId);
+                } else {
+                    log.warn("🚨 [대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
+                    break LOOP;
+                }
+
+                Reservation reservation = reservationRepository.save(Reservation.builder()
+                        .store(store)
+                        .date(date)
+                        .timeSlot(timeSlot)
+                        .user(userId)
+                        .status(ReservationStatus.COMPLETED)
+                        .build());
+
+                log.info("✅ 예약 완료: 사용자 {}", userId);
+                redisTemplate.opsForValue().decrement(slotKey);
+                log.info("Updated available slots: {} for {}", redisTemplate.opsForValue().get(slotKey), slotKey);
+
+                // 사용자 정보를 해시에 추가 (예약한 사용자 기록)
+                redisTemplate.opsForHash().put(uniqueUsersKey, userId, "1");
+                log.info("✅ [Redis] 사용자 '{}'를 uniqueUsersKey '{}'에 추가", userId, uniqueUsersKey);
+
+                break LOOP;
+            } catch (Exception e) {
+                log.error("🚨 예약 처리 실패. 재시도 시도: {}/{}", attempts, maxAttempts, e);
+
+                if (attempts == maxAttempts) {
+                    log.error("❌ 최대 재시도 횟수 초과. 예약 처리 중단: {}", message);
+                    break LOOP;
+                }
+
+                try {
+                    Thread.sleep(retryDelay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("⏳ 재시도 중 인터럽트 발생.", ie);
+                    break LOOP;
+                }
+
+                retryDelay *= 2;
+            }
+            /*try {
+                String[] parts = message.split("\\|");
+                int storeId = Integer.parseInt(parts[0].replaceAll("[^0-9]", "").trim());
+                String date = parts[1];
+                String timeSlot = parts[2];
+                String parts3 = parts[3];
                 String userId = parts3.substring(0,parts[3].length()-1);
 
                 String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
@@ -99,7 +164,7 @@ public class ReservationSubscriber implements MessageListener {
                 }
 
                 retryDelay *= 2;
-            }
+            }*/
         }
     }
 }
