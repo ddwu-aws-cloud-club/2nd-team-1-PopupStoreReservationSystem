@@ -59,9 +59,9 @@ public class ReservationSubscriber implements MessageListener {
 
                     Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, userId);
                     if (queueRemovedCount > 0) {
-                        log.info("✅ [대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", userId);
+                        log.info("[대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", userId);
                     } else {
-                        log.warn("🚨 [대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
+                        log.warn("[대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
                         break LOOP;
                     }
 
