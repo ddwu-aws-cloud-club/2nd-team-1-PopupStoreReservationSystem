@@ -78,7 +78,8 @@ public class ReservationService {
 
         String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
         log.info("✅슬롯 {}",slotValue);
-        int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
+        int slots = Integer.parseInt(slotValue.replaceAll("[^0-9]", "").trim());
+        int availableSlots = slotValue != null ? slots : 0;
         log.info("🔍 [예약 가능 슬롯 확인] 현재 슬롯 수: {}", availableSlots);
 
         if (availableSlots > 0) {
