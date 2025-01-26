@@ -1,5 +1,6 @@
 package com.westsomsom.finalproject.reservation.application;
 
+import com.westsomsom.finalproject.notification.application.NotificationService;
 import com.westsomsom.finalproject.reservation.dao.ReservationRepository;
 import com.westsomsom.finalproject.reservation.domain.Reservation;
 import com.westsomsom.finalproject.reservation.domain.ReservationStatus;
@@ -12,14 +13,13 @@ import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReservationSubscriber implements MessageListener {
     private final ReservationRepository reservationRepository;
     private final StoreService storeService;
+    private final NotificationService notificationService;
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
@@ -36,34 +36,21 @@ public class ReservationSubscriber implements MessageListener {
         int maxAttempts = 5;
         int retryDelay = 100; // 시작 딜레이 (ms)
 
-        LOOP: for (int attempts = 1; attempts <= maxAttempts; attempts++) {
+        for (int attempts = 1; attempts <= maxAttempts; attempts++) {
             try {
                 String[] parts = message.split("\\|");
-                int storeId = Integer.parseInt(parts[0].replaceAll("[^0-9]", "").trim());
+                int storeId = Integer.parseInt(parts[0]);
                 String date = parts[1];
                 String timeSlot = parts[2];
-                String parts3 = parts[3];
-                String userId = parts3.substring(0,parts[3].length()-1);
+                String userId = parts[3];
 
                 String slotKey = "availableSlots|" + storeId + "|" + date + "|" + timeSlot;
-                String queueKey = "reservationQueue|" + storeId + "|" + date + "|" + timeSlot;
+                String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
+                int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
 
-                // 예약 가능한 슬롯 수 확인
-                //String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
-                //int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
-
-                List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
-                if (queue != null && queue.contains(userId)) {
+                if (availableSlots > 0) {
                     Store store = storeService.findById(storeId)
                             .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
-
-                    Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, userId);
-                    if (queueRemovedCount > 0) {
-                        log.info("[대기열 취소] 사용자 '{}'가 Redis List에서 제거됨.", userId);
-                    } else {
-                        log.warn("[대기열 취소] 사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
-                        break LOOP;
-                    }
 
                     Reservation reservation = reservationRepository.save(Reservation.builder()
                             .store(store)
@@ -73,32 +60,32 @@ public class ReservationSubscriber implements MessageListener {
                             .status(ReservationStatus.COMPLETED)
                             .build());
 
-                    log.info("✅ 예약 완료: 사용자 {}", userId);
-                    redisTemplate.opsForValue().decrement(slotKey);
-                    log.info("Updated available slots: {} for {}", redisTemplate.opsForValue().get(slotKey), slotKey);
+                    //notificationService.createScheduleAsync(id);
 
-                    break LOOP;
-                }else{
-                    log.info("이미 예약한 사용자입니다.");
-                    break LOOP;
+                    log.info("예약 완료: 사용자 {}", userId);
+                    redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
+                    log.info("Updated available slots: {} for {}", availableSlots, slotKey);
+                    return;
+                } else {
+                    log.info("예약이 마감되었습니다: 사용자 {}", userId);
+                    return;
                 }
             } catch (Exception e) {
-                log.error("🚨 예약 처리 실패. 재시도 시도: {}/{}", attempts, maxAttempts, e);
+                log.error("예약 처리 실패. 재시도 시도: {}/{}", attempts, maxAttempts, e);
 
                 if (attempts == maxAttempts) {
-                    log.error("❌ 최대 재시도 횟수 초과. 예약 처리 중단: {}", message);
-                    break LOOP;
+                    log.error("최대 재시도 횟수 초과. 예약 처리 중단: {}", message);
+                    break;
                 }
 
                 try {
-                    Thread.sleep(retryDelay);
+                    Thread.sleep(retryDelay); // 딜레이 적용
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
-                    log.error("⏳ 재시도 중 인터럽트 발생.", ie);
-                    break LOOP;
+                    log.error("재시도 중 인터럽트 발생.", ie);
                 }
 
-                retryDelay *= 2;
+                retryDelay *= 2; // 지수 증가
             }
         }
     }

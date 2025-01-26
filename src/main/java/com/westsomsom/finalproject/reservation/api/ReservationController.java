@@ -20,23 +20,6 @@ public class ReservationController {
     private final RedisTemplate redisTemplate;
     private final ReservationService reservationService;
 
-    //예약 정보 생성 /api/reservation
-
-    //예약 요청이 들어올 경우 -> 예약 가능 시간(오픈 시간 이후)이 맞는지 체크
-    //만약 이전에 들어온 요청인 경우 -> "아직 예약 시간이 아닙니다"
-    //예약 시간에 들어온 요청인 경우 -> 실시간 대기열 시스템에 추가
-    //예약 시 인원수 같은 건x 그냥 시간대 선택만!!
-
-    //날짜+시간대 별 예약 가능 인원 10명으로 설정
-
-    //예약 신청 - 실시간 대기열 시스템
-
-
-    //크리스마스 팝업
-    //11/30~12/28 진행
-    //예약은 11/15 14:00~ 11/16 18:00 가능
-    //예약 가능일 체크
-
     //대기열에 사용자 추가
     @PostMapping("/enter")
     public ResponseEntity<String> enterQueue(@RequestBody ReservationDto reservationDto) {
