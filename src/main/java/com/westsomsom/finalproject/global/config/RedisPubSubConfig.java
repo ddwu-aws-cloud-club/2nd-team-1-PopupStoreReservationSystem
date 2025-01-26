@@ -22,22 +22,17 @@ public class RedisPubSubConfig {
             RedisConnectionFactory connectionFactory,
             MessageListenerAdapter listenerAdapter,
             MessageListenerAdapter chatListenerAdapter) {
+
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
 
-        // 클러스터 환경에서 모든 노드를 대상으로 메시지 리스너 등록
-        container.setTaskExecutor(Executors.newFixedThreadPool(10)); // 병렬 처리 가능하도록 설정
-
-        // 예약 관련 리스너 등록
+        //리스너 등록
         container.addMessageListener(listenerAdapter, new ChannelTopic("reservationChannel"));
-
-        /// 채팅 관련 리스너 등록
         container.addMessageListener(chatListenerAdapter, chatTopic());
 
         return container;
     }
 
-    // 예약 메시지 리스너 어댑터
     @Bean
     public MessageListenerAdapter listenerAdapter(ReservationSubscriber subscriber) {
         return new MessageListenerAdapter(subscriber);
@@ -49,19 +44,12 @@ public class RedisPubSubConfig {
         return new MessageListenerAdapter(subscriber, "onMessage");
     }
 
-    // 예약 채널 설정
-    @Bean
-    public ChannelTopic topic() {
-        return new ChannelTopic("reservationChannel");
-    }
-
     // 채팅 채널 설정
     @Bean
     public ChannelTopic chatTopic() {
         return new ChannelTopic("chatChannel");
     }
 
-    // 예약 Publisher
     @Bean
     public ReservationPublisher reservationPublisher(RedisTemplate<String, Object> redisTemplate) {
         return new ReservationPublisher(redisTemplate);
