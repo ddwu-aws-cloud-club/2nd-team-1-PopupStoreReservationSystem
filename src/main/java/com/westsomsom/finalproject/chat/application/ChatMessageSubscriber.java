@@ -15,6 +15,10 @@ import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -88,6 +92,17 @@ public class ChatMessageSubscriber implements MessageListener {
 
             // 메시지를 Redis에 저장
             redisTemplate.opsForValue().set(redisKey, chatMessageDto.getMessage());
+
+            // TTL 설정
+            Optional<Store> storeOptional = storeRepository.findById(chatMessageDto.getStoreId());
+            if (storeOptional.isPresent()) {
+                Store store = storeOptional.get();
+                LocalDateTime findate = store.getReservationFin();
+                long secondsUntilExpiry = ChronoUnit.SECONDS.between(LocalDateTime.now(), findate);
+                if (secondsUntilExpiry > 0) {
+                    redisTemplate.expire(redisKey, secondsUntilExpiry, java.util.concurrent.TimeUnit.SECONDS);
+                }
+            }
 
             log.info("Redis에 채팅 메시지가 저장됨: key = {}", redisKey);
         } catch (Exception e) {
