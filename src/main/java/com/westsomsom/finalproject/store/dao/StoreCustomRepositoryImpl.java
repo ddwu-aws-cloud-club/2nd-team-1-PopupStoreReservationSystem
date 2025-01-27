@@ -26,20 +26,6 @@ public class StoreCustomRepositoryImpl implements StoreCustomRepository{
 
     private final JPAQueryFactory queryFactory;
 
-//    public Page<Store> getAllStores(Pageable pageable) {
-//        List<Store> storeList = queryFactory
-//                .selectFrom(store)
-//                .limit(pageable.getPageSize())
-//                .offset(pageable.getOffset())
-//                .fetch();
-//
-//        JPAQuery<Long> countQuery = queryFactory
-//                .select(store.count())
-//                .from(store);
-//
-//        return PageableExecutionUtils.getPage(storeList, pageable, countQuery::fetchOne);
-//    }
-
     @Override
     public Slice<Store> findStoresNoOffset(Integer lastStoreId, Pageable pageable) {
         QStore store = QStore.store;

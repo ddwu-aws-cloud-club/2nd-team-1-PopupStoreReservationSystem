@@ -12,5 +12,4 @@ public interface StoreCustomRepository {
     Slice<Store> findStoresNoOffset(Integer lastStoreId, Pageable pageable);
     List<SearchResponseDto> searchStore(SearchRequestDto searchRequestDto);
     List<SearchResponseDto> searchStoreCategory(String category, Integer storeId);
-//    Page<Store> getAllStores(Pageable pageable);
 }
