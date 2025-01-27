@@ -32,12 +32,6 @@ public class StoreController {
         Slice<Store> stores = storeService.getAllStoresNoOffset(lastStoreId, PageRequest.of(0, 20));
         return ResponseEntity.ok(stores);
     }
-//    public ResponseEntity<Page<Store>> getAllStores(
-//            @RequestParam(value = "page", defaultValue = "0") Integer page
-//    ) {
-//        Page<Store> stores = storeService.getAllStores(PageRequest.of(page, 20));
-//        return ResponseEntity.ok(stores);
-//    }
 
     @GetMapping("/api/search")
     public ResponseEntity<?> searchStore(@RequestParam(value = "name", required = false) String name,

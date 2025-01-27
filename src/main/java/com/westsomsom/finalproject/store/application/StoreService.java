@@ -20,10 +20,6 @@ public class StoreService {
 
     private final StoreRepository storeRepository;
 
-//    public Page<Store> getAllStores(Pageable pageable) {
-//        return storeRepository.getAllStores(pageable);
-//    }
-
     public Slice<Store> getAllStoresNoOffset(Integer lastStoreId, Pageable pageable) {
         return storeRepository.findStoresNoOffset(lastStoreId, pageable);
     }
