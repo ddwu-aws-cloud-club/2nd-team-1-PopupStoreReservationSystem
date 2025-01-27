@@ -13,6 +13,8 @@ import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,10 @@ public class ReservationSubscriber implements MessageListener {
     private final StoreService storeService;
     private final NotificationService notificationService;
     private final RedisTemplate<String, Object> redisTemplate;
+
+    private static final String REDIS_QUEUE_KEY = "reservationQueue|";
+    private static final String UNIQUE_USERS_KEY = "uniqueUsers|";
+    private static final String AVAILABLE_SLOTS_KEY = "availableSlots|";
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -36,7 +42,7 @@ public class ReservationSubscriber implements MessageListener {
         int maxAttempts = 5;
         int retryDelay = 100; // 시작 딜레이 (ms)
 
-        for (int attempts = 1; attempts <= maxAttempts; attempts++) {
+        LOOP:for (int attempts = 1; attempts <= maxAttempts; attempts++) {
             try {
                 String[] parts = message.split("\\|");
                 int storeId = Integer.parseInt(parts[0].replaceAll("[^0-9]", "").trim());
@@ -49,7 +55,21 @@ public class ReservationSubscriber implements MessageListener {
                 String slotValue = (String) redisTemplate.opsForValue().get(slotKey);
                 int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
 
-                if (availableSlots > 0) {
+                String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
+                String uniqueUsersKey = UNIQUE_USERS_KEY + storeId + "|" + date + "|" + timeSlot;
+
+                Boolean uniqueUser = redisTemplate.opsForSet().isMember(uniqueUsersKey, userId);
+                List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
+
+                if (queue != null && queue.contains(userId) && uniqueUser) {
+                    Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, userId);
+                    if (queueRemovedCount > 0) {
+                        log.info("사용자 '{}' 예약 진행", userId);
+                    } else {
+                        log.warn("사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
+                        break LOOP;
+                    }
+
                     Store store = storeService.findById(storeId)
                             .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
 
