@@ -26,8 +26,6 @@ public class ReservationSubscriber implements MessageListener {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String REDIS_QUEUE_KEY = "reservationQueue|";
-    private static final String UNIQUE_USERS_KEY = "uniqueUsers|";
-    private static final String AVAILABLE_SLOTS_KEY = "availableSlots|";
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
