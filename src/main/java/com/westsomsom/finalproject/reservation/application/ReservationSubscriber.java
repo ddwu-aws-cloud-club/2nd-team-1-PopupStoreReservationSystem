@@ -56,12 +56,6 @@ public class ReservationSubscriber implements MessageListener {
 
                 String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
 
-                String user = (String) redisTemplate.opsForList().leftPop(queueKey);
-                if (user == null) {
-                    log.info("대기열이 비어 있음");
-                    break LOOP;
-                }
-
                 // 남은 대기열에서 각 사용자에게 개별 WebSocket 메시지 전송
                 List<Object> updatedQueue = redisTemplate.opsForList().range(queueKey, 0, -1);
                 if (updatedQueue != null) {
@@ -71,6 +65,11 @@ public class ReservationSubscriber implements MessageListener {
                     }
                 }
 
+                String user = (String) redisTemplate.opsForList().leftPop(queueKey);
+                if (user == null) {
+                    log.info("대기열이 비어 있음");
+                    break LOOP;
+                }
                 if (availableSlots>0) {
                     Store store = storeService.findById(storeId)
                             .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
