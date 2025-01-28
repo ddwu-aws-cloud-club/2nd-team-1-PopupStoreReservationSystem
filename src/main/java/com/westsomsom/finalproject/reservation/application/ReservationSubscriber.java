@@ -58,8 +58,17 @@ public class ReservationSubscriber implements MessageListener {
 
                 String user = (String) redisTemplate.opsForList().leftPop(queueKey);
                 if (user == null) {
-                    log.info("🚨 대기열이 비어 있음");
+                    log.info("대기열이 비어 있음");
                     break LOOP;
+                }
+
+                // 남은 대기열에서 각 사용자에게 개별 WebSocket 메시지 전송
+                List<Object> updatedQueue = redisTemplate.opsForList().range(queueKey, 0, -1);
+                if (updatedQueue != null) {
+                    for (int i = 0; i < updatedQueue.size(); i++) {
+                        String queuedUser = updatedQueue.get(i).toString();
+                        webSocketNotificationService.sendQueueUpdate(queuedUser, i + 1);
+                    }
                 }
 
                 if (availableSlots>0) {
@@ -73,15 +82,6 @@ public class ReservationSubscriber implements MessageListener {
                             .user(userId)
                             .status(ReservationStatus.COMPLETED)
                             .build());
-
-                    // 남은 대기열에서 각 사용자에게 개별 WebSocket 메시지 전송
-                    List<Object> updatedQueue = redisTemplate.opsForList().range(queueKey, 0, -1);
-                    if (updatedQueue != null) {
-                        for (int i = 0; i < updatedQueue.size(); i++) {
-                            String queuedUser = updatedQueue.get(i).toString();
-                            webSocketNotificationService.sendQueueUpdate(queuedUser, i + 1);
-                        }
-                    }
 
                     log.info("예약 완료: 사용자 {}", userId);
                     redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
