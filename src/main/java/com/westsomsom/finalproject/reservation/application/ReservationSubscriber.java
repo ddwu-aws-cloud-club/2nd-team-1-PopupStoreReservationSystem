@@ -86,17 +86,17 @@ public class ReservationSubscriber implements MessageListener {
                     log.info("예약 완료: 사용자 {}", userId);
                     redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
                     log.info("Updated available slots: {} for {}", availableSlots, slotKey);
-                    return;
+                    break LOOP;
                 } else {
                     log.info("예약이 마감되었습니다: 사용자 {}", userId);
-                    return;
+                    break LOOP;
                 }
             } catch (Exception e) {
                 log.error("예약 처리 실패. 재시도 시도: {}/{}", attempts, maxAttempts, e);
 
                 if (attempts == maxAttempts) {
                     log.error("최대 재시도 횟수 초과. 예약 처리 중단: {}", message);
-                    break;
+                    break LOOP;
                 }
 
                 try {
