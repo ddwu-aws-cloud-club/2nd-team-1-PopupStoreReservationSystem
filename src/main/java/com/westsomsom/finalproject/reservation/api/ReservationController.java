@@ -43,7 +43,7 @@ public class ReservationController {
         return ResponseEntity.ok(res);
     }
 
-    @GetMapping("/queue-status")
+    /*@GetMapping("/queue-status")
     public ResponseEntity<String> getQueueStatus(
                                                  @RequestParam String memberId,
                                                  @RequestParam String date,
@@ -51,7 +51,7 @@ public class ReservationController {
                                                  @RequestParam int storeId) {
         String res = reservationService.getQueueStatus(date, timeSlot, memberId, storeId);
         return ResponseEntity.ok(res);
-    }
+    }*/
 
     //예약 목록 조회
     @GetMapping

@@ -22,6 +22,7 @@ public class ReservationSubscriber implements MessageListener {
     private final ReservationRepository reservationRepository;
     private final StoreService storeService;
     private final NotificationService notificationService;
+    private final WebSocketNotificationService webSocketNotificationService;
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String REDIS_QUEUE_KEY = "reservationQueue|";
@@ -56,20 +57,14 @@ public class ReservationSubscriber implements MessageListener {
                 int availableSlots = slotValue != null ? Integer.parseInt(slotValue) : 0;
 
                 String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
-                String uniqueUsersKey = UNIQUE_USERS_KEY + storeId + "|" + date + "|" + timeSlot;
 
-                Boolean uniqueUser = redisTemplate.opsForSet().isMember(uniqueUsersKey, userId);
-                List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
+                String user = (String) redisTemplate.opsForList().leftPop(queueKey);
+                if (user == null) {
+                    log.info("🚨 대기열이 비어 있음");
+                    break LOOP;
+                }
 
-                if (queue != null && queue.contains(userId) && uniqueUser) {
-                    Long queueRemovedCount = redisTemplate.opsForList().remove(queueKey, 0, userId);
-                    if (queueRemovedCount > 0) {
-                        log.info("사용자 '{}' 예약 진행", userId);
-                    } else {
-                        log.warn("사용자 '{}' 제거 실패! queueKey: {}", userId, queueKey);
-                        break LOOP;
-                    }
-
+                if (availableSlots>0) {
                     Store store = storeService.findById(storeId)
                             .orElseThrow(() -> new RuntimeException("Store not found for ID: " + storeId));
 
@@ -81,11 +76,20 @@ public class ReservationSubscriber implements MessageListener {
                             .status(ReservationStatus.COMPLETED)
                             .build());
 
-                    //notificationService.createScheduleAsync(id);
+                    // 남은 대기열에서 각 사용자에게 개별 WebSocket 메시지 전송
+                    List<Object> updatedQueue = redisTemplate.opsForList().range(queueKey, 0, -1);
+                    if (updatedQueue != null) {
+                        for (int i = 0; i < updatedQueue.size(); i++) {
+                            String queuedUser = updatedQueue.get(i).toString();
+                            webSocketNotificationService.sendQueueUpdate(queuedUser, i + 1);
+                        }
+                    }
 
                     log.info("예약 완료: 사용자 {}", userId);
                     redisTemplate.opsForValue().set(slotKey, String.valueOf(--availableSlots));
                     log.info("Updated available slots: {} for {}", availableSlots, slotKey);
+
+                    //notificationService.createScheduleAsync(id);
                     break LOOP;
                 } else {
                     log.info("예약이 마감되었습니다: 사용자 {}", userId);
