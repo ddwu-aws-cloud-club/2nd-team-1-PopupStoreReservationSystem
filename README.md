@@ -3,8 +3,6 @@
 ## **프로젝트 소개**
 팝업스토어 예약 및 추천 서비스로, 팝업스토어 예약 오픈 시점에 트래픽이 몰리며 이를 대응할 수 있는 서비스이다. 사용자는 자신과 비슷한 조건을 가진 그룹의 카드 결제 내역을 토대로 기반으로 다른 팝업스토어를 추천받을 수 있다.
 
-https://github.com/west-somsom/PopupStoreReservationSystem
-
 ### **주요 기능**
 1. 사용자 관리
    - 카카오 소셜 로그인을 통한 간편 로그인
@@ -524,7 +522,7 @@ export default function () {
 ## **개선할 점**
 #### 1. 팝업 스토어 전체 조회 부분 Redis 사용
 - 도입 배경
-  - 기존 DB 직접 조회 방식에서, 데이터 양이 **"connection timeout"** 오류 발생:
+  - 기존 DB 직접 조회 방식에서, "connection timeout" 오류 발생:<br>
         `read tcp 192.168.1.6:58959->15.164.35.224:80: wsarecv: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond."`
   - 원인은 대량 조회로 인한 DB 부하로 추정, 이를 해결하기 위해 캐시(Redis) 도입
     - **변경 내용:** 팝업 스토어 등록 시 캐시에 저장 → 전체 조회는 캐시에서 처리
