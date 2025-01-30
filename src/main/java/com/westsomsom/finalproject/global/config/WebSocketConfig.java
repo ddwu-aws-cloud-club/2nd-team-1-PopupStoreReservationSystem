@@ -9,11 +9,13 @@ import org.springframework.web.socket.config.annotation.*;
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final WebSocketChatHandler webSocketHandler;
+    private final WebSocketReservationHandler webSocketReservationHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry
                 .addHandler(webSocketHandler, "/ws/conn")
-                .setAllowedOrigins("*"); // CORS 허용
+                .addHandler(webSocketReservationHandler, "/ws-reservation")
+                .setAllowedOriginPatterns("*");
     }
 }
