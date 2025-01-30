@@ -57,13 +57,13 @@ public class ReservationSubscriber implements MessageListener {
                 String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
 
                 // 남은 대기열에서 각 사용자에게 개별 WebSocket 메시지 전송
-                List<Object> updatedQueue = redisTemplate.opsForList().range(queueKey, 0, -1);
+                /*List<Object> updatedQueue = redisTemplate.opsForList().range(queueKey, 0, -1);
                 if (updatedQueue != null) {
                     for (int i = 0; i < updatedQueue.size(); i++) {
                         String queuedUser = updatedQueue.get(i).toString();
                         webSocketNotificationService.sendQueueUpdate(queuedUser, i + 1);
                     }
-                }
+                }*/
 
                 String user = (String) redisTemplate.opsForList().leftPop(queueKey);
                 if (user == null) {

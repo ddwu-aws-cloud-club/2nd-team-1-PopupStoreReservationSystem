@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.PingMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -28,7 +29,7 @@ public class WebSocketReservationHandler extends TextWebSocketHandler {
         new Thread(() -> {
             try {
                 while (session.isOpen()) {
-                    session.sendMessage(new TextMessage("ping"));
+                    session.sendMessage(new PingMessage());
                     Thread.sleep(10000);
                 }
             } catch (Exception e) {
@@ -36,6 +37,7 @@ public class WebSocketReservationHandler extends TextWebSocketHandler {
             }
         }).start();
     }
+
 
 
     @Override
