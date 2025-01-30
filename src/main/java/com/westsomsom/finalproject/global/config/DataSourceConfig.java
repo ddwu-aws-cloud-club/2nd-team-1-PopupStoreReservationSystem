@@ -17,7 +17,7 @@ import java.util.HashMap;
 
 @Configuration
 @RequiredArgsConstructor
-@EnableJpaRepositories
+@EnableJpaRepositories(basePackages = "com.westsomsom.finalproject")
 public class DataSourceConfig {
 
     // Write replica 정보로 만든 DataSource
