@@ -11,6 +11,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class SearchRequestDto {
+    private Integer storeId;
+
     private String storeName;
 
     private LocalDate startDate;
