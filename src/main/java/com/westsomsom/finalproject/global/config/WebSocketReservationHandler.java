@@ -23,7 +23,20 @@ public class WebSocketReservationHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         log.info("✅ WebSocket 연결됨: {}", session.getId());
+
+        // Ping 메시지 전송 (10초마다)
+        new Thread(() -> {
+            try {
+                while (session.isOpen()) {
+                    session.sendMessage(new TextMessage("ping"));
+                    Thread.sleep(10000);
+                }
+            } catch (Exception e) {
+                log.error("🚨 WebSocket Ping 메시지 전송 실패", e);
+            }
+        }).start();
     }
+
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {

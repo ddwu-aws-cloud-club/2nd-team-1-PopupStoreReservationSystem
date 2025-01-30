@@ -114,7 +114,7 @@ public class ReservationService {
     }
 
     //대기열 상태 확인
-    /*public String getQueueStatus(String date, String timeSlot, String memberId, int storeId) {
+    public String getQueueStatus(String date, String timeSlot, String memberId, int storeId) {
         String queueKey = REDIS_QUEUE_KEY + storeId + "|" + date + "|" + timeSlot;
 
         List<Object> queue = redisTemplate.opsForList().range(queueKey, 0, -1);
@@ -128,7 +128,7 @@ public class ReservationService {
 
         log.info("사용자 {}는 현재 {}번째입니다. 뒤에 {}명 있습니다.", memberId, position+1, peopleBehind);
         return "사용자 "+memberId+"는 현재 "+(position+1)+"번째입니다. 뒤에 "+peopleBehind+"명 있습니다.";
-    }*/
+    }
 
     //예약 정보 상세 조회
     public Optional<Reservation> getReservation(Long reservationId){
