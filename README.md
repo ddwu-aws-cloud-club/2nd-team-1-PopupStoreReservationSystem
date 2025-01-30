@@ -3,7 +3,7 @@
 <br><span style="background-color:#fff5b1">**🚀 1/30 최종 개선사항은 하단에 기재해두었습니다. 🚀**</span><br><br>
 ## **프로젝트 소개**
 팝업스토어 예약 및 추천 서비스로, 팝업스토어 예약 오픈 시점에 트래픽이 몰리며 이를 대응할 수 있는 서비스이다. 사용자는 자신과 비슷한 조건을 가진 그룹의 카드 결제 내역을 토대로 기반으로 다른 팝업스토어를 추천받을 수 있다.<br>
-<br>**Skills** `JAVA 17`, `SpringBoot3`, `MySQL`, `AWS`
+<br>**Skills** `JAVA 17`, `SpringBoot3`, `MySQL`, `AWS` (하단 Infra 사진 참고)
 
 ### **주요 기능**
 1. 사용자 관리
@@ -278,9 +278,10 @@ https://drive.google.com/file/d/1np6pBRT7CSKuDsdFETkB0GAE_jj3KigE/view
 - 문제점
   - 캐시 미스 시 DB 조회 및 캐시 저장 과정 추가로, 단순 DB 조회보다 비효율적
 - 개선 방향
-   - 캐시 전략 최적화 필요:
+   1. 캐시 전략 최적화
       - 자주 조회되는 데이터 우선 캐싱
       - 캐시 적중률 향상을 위한 TTL(Time-to-Live) 및 데이터 구조 개선
+   2. no offset 방식으로 개선
 #### 2. EC2 접근을 위해 Bastion host 사용
 - Bastion host 대신 System Manager Session Manager 도입을 통해 보다 더 안전한 접근 관리 필요
 #### 3. CI/CD 파이프라인 부재
@@ -305,6 +306,8 @@ https://drive.google.com/file/d/1np6pBRT7CSKuDsdFETkB0GAE_jj3KigE/view
 - 팝업 스토어 전체 정보 조회 기능
     - no offset 적용
 - 예약 기능
+    - 지수 백오프 알고리즘 추가
+        - 예약 데이터 저장 실패 가능성 고려
     - Redis Pub/Sub 적용
         ⇒ 기존의 스케줄러 방식보다 실시간성 개선
 
@@ -330,3 +333,22 @@ https://drive.google.com/file/d/1np6pBRT7CSKuDsdFETkB0GAE_jj3KigE/view
 
 - Auto Scaling 크기 조정 정책 설정
     - CloudWatch 경보를 바탕으로 EC2 ASG, ECS Service에 단계 조정 정책 설정
+ 
+## 테스트 결과 및 비교
+### 부하 테스트
+![image](https://github.com/user-attachments/assets/e93b14e2-2ec0-4230-9d55-2d0229989d73)
+- 결론 (개선사항)
+  - 개선 버전의 성능이 전반적으로 훨씬 개선됨.
+  - 요청 수 50% 증가에도 불구하고 응답 속도가 약 14배 빨라지고, 실패율이 0%로 향상됨.
+  - 최대 응답 시간이 1번에서 60초까지 걸리던 것이, 2번에서는 17초로 단축됨.
+  - Iteration 수행 횟수가 2.5배 증가하며, 동시 사용자 처리 성능이 크게 개선됨. 
+
+
+### 스파이크 테스트
+![image](https://github.com/user-attachments/assets/0d136c36-79b9-4399-8d2c-066d45cf07f3)
+- 결론 (개선사항)
+  - 1번(Scheduler 적용 예약 버전), 2번(Redis Pub/Sub 적용 예약 버전), 3번(전체 개선 버전)
+  - 3번이 1번과 2번에 비해 가장 안정적이며 성능이 우수함.
+  - 응답 속도가 1번, 2번 대비 약 40% 단축되었으며, 최대 응답 시간도 절반 이하로 감소.
+  - 실패율 0%로 가장 안정적인 성능을 보여줌.
+  - Iteration 처리량(요청 수)이 70% 증가하며 부하 처리 능력 향상됨. 
