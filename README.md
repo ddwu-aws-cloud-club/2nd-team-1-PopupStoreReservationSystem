@@ -522,7 +522,7 @@ export default function () {
 ## **개선할 점**
 #### 1. 팝업 스토어 전체 조회 부분 Redis 사용
 - 도입 배경
-  - 기존 DB 직접 조회 방식에서, "connection timeout" 오류 발생:
+  - 기존 DB 직접 조회 방식에서, "connection timeout" 오류 발생:<br>
         `read tcp 192.168.1.6:58959->15.164.35.224:80: wsarecv: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond."`
   - 원인은 대량 조회로 인한 DB 부하로 추정, 이를 해결하기 위해 캐시(Redis) 도입
     - **변경 내용:** 팝업 스토어 등록 시 캐시에 저장 → 전체 조회는 캐시에서 처리
