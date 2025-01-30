@@ -35,7 +35,7 @@
 
 ### **아키텍처 설계 및 구성**
 ### **Infra**
-![아키텍처 구조도 drawio](https://github.com/user-attachments/assets/f6ec5d0e-a548-44b8-ab14-b325e36df364)
+![image](https://github.com/user-attachments/assets/93fa5dd2-b052-459a-918b-c333f82c5c5e)
 - Public과 Private으로 분리하여 외부 사용자가 접근하는 네트워크와 데이터가 저장된 네트워크 분리
   - Public Subnet
     - 외부 트래픽 처리
@@ -539,6 +539,8 @@ export default function () {
 #### 3. CI/CD 파이프라인 부재
 - 빌드 파일 생성 및  Filezilla를 통한 수동 배포 진행
 - 적절한 CI/CD 파이프라인 구축 필요
+
+![아키텍처 구조도 drawio](https://github.com/user-attachments/assets/f6ec5d0e-a548-44b8-ab14-b325e36df364)
   - github action + ECR 등의 파이프라인 구축 가능
 #### 4. Auto Scaling 정책 부재
 - 정책 설정의 필요성
