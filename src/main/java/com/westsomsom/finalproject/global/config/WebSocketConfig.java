@@ -16,7 +16,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry
                 .addHandler(webSocketHandler, "/ws/conn")
                 .addHandler(webSocketReservationHandler, "/ws-reservation")
-                .setAllowedOrigins("*")
                 .setAllowedOriginPatterns("*");
     }
 }
