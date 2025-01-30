@@ -14,12 +14,12 @@ spring:
   datasource:
     read:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: ${DB_URL_REPLICA}
+      jdbc-url: ${DB_URL_REPLICA}
       username: ${DB_NAME}
       password: ${DB_PASSWORD}
     write:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: ${DB_URL}
+      jdbc-url: ${DB_URL}
       username: ${DB_NAME}
       password: ${DB_PASSWORD}
 
