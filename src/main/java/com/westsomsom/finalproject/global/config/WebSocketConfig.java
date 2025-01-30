@@ -16,6 +16,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry
                 .addHandler(webSocketHandler, "/ws/conn")
                 .addHandler(webSocketReservationHandler, "/ws-reservation")
-                .setAllowedOrigins("*"); // CORS 허용
+                .setAllowedOrigins("*")
+                .setAllowedOriginPatterns("*");
     }
 }
