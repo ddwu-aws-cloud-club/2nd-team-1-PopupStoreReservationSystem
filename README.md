@@ -3,6 +3,8 @@
 ## **프로젝트 소개**
 팝업스토어 예약 및 추천 서비스로, 팝업스토어 예약 오픈 시점에 트래픽이 몰리며 이를 대응할 수 있는 서비스이다. 사용자는 자신과 비슷한 조건을 가진 그룹의 카드 결제 내역을 토대로 기반으로 다른 팝업스토어를 추천받을 수 있다.
 
+**Skills** `JAVA 17`, `SpringBoot3`, `MySQL`, `AWS`
+
 ### **주요 기능**
 1. 사용자 관리
    - 카카오 소셜 로그인을 통한 간편 로그인
@@ -33,7 +35,7 @@
 
 ### **아키텍처 설계 및 구성**
 ### **Infra**
-![아키텍처 구조도 drawio (1)](https://github.com/user-attachments/assets/469f1b35-513a-4ff2-9d77-c5fb6c770cab)
+![아키텍처 구조도 drawio](https://github.com/user-attachments/assets/f6ec5d0e-a548-44b8-ab14-b325e36df364)
 - Public과 Private으로 분리하여 외부 사용자가 접근하는 네트워크와 데이터가 저장된 네트워크 분리
   - Public Subnet
     - 외부 트래픽 처리
