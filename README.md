@@ -1,9 +1,9 @@
 [DDWU ACC 2nd] Popup Store Reservation System
 =
+<br><span style="background-color:#fff5b1">**🚀 1/30 최종 개선사항은 하단에 기재해두었습니다. 🚀**</span><br><br>
 ## **프로젝트 소개**
-팝업스토어 예약 및 추천 서비스로, 팝업스토어 예약 오픈 시점에 트래픽이 몰리며 이를 대응할 수 있는 서비스이다. 사용자는 자신과 비슷한 조건을 가진 그룹의 카드 결제 내역을 토대로 기반으로 다른 팝업스토어를 추천받을 수 있다.
-
-**Skills** `JAVA 17`, `SpringBoot3`, `MySQL`, `AWS`
+팝업스토어 예약 및 추천 서비스로, 팝업스토어 예약 오픈 시점에 트래픽이 몰리며 이를 대응할 수 있는 서비스이다. 사용자는 자신과 비슷한 조건을 가진 그룹의 카드 결제 내역을 토대로 기반으로 다른 팝업스토어를 추천받을 수 있다.<br>
+<br>**Skills** `JAVA 17`, `SpringBoot3`, `MySQL`, `AWS`
 
 ### **주요 기능**
 1. 사용자 관리
@@ -208,77 +208,6 @@ https://drive.google.com/file/d/1np6pBRT7CSKuDsdFETkB0GAE_jj3KigE/view
     - **예약 신청**: 예약 데이터가 정상적으로 들어가는지 확인.
     - **현재 순번 확인:** 예약 관련 데이터가 올바르게 표시되는지 검증.
 
-코드
-```javascript
-import http from 'k6/http';
-import { sleep, check } from 'k6';
-import { Trend } from 'k6/metrics';
-
-// Custom metrics
-const Response_Time = new Trend('Response_Time');
-
-export const options = {
-  stages: [
-    { duration: '1m', target: 50 }, 
-    { duration: '1m', target: 50 },
-    { duration: '1m', target: 0 },
-  ],
-};
-
-export default function () {
-  const baseUrl = 'http://west-somsom-alb-1941268033.ap-northeast-2.elb.amazonaws.com';
-
-  // 랜덤 페이지 번호 (0~19)
-  const page = Math.floor(Math.random() * 20); // 0부터 19 사이의 랜덤 값
-  const size = 50; // 한 페이지당 50개 조회
-
-  // **홈 조회**
-  const homeResponse = http.get(`${baseUrl}/api/home?page=${page}&size=${size}`);
-  Response_Time.add(homeResponse.timings.duration);
-  console.log('홈 응답 상태 코드:', homeResponse.status);
-  check(homeResponse, {
-    '홈 응답 상태는 200': (res) => res.status === 200,
-    '홈 응답 본문 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-
-  // 예약 전송을 위한 데이터
-  const memberId = `user${__VU}`; // Virtual User ID (user1, user2, ..., user500)
-  const reservationBody = JSON.stringify({
-    memberId: memberId,
-    date: '2024-12-08',
-    timeSlot: '23:00',
-    storeId: '1001',
-  });
-  const reservationHeaders = { 'Content-Type': 'application/json' };
-  // **예약 신청**
-  const reservationResponse = http.post(`${baseUrl}/api/reservation/enter`, reservationBody, { headers: reservationHeaders });
-  Response_Time.add(reservationResponse.timings.duration);
-  console.log('예약 신청 응답 상태 코드:', reservationResponse.status);
-  console.log('예약 신청 응답 본문:', reservationResponse.body);
-  check(reservationResponse, {
-    '예약 신청 응답 상태는 200': (res) => res.status === 200,
-    '예약 신청 응답 문자열 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-
-  // **현재 순번 확인**
-  const queueMemberId = `user1`;
-  const date = '2024-12-08';
-  const timeSlot = '20:00';
-  const storeId = '1001'; 
-  const queueStatusUrl = `${baseUrl}/api/reservation/queue-status?memberId=${memberId}&date=${date}&timeSlot=${timeSlot}&storeId=${storeId}`;
-  const queueStatusResponse = http.get(queueStatusUrl);
-  Response_Time.add(queueStatusResponse.timings.duration);
-  console.log('현재 순번 확인 응답 상태 코드:', queueStatusResponse.status);
-  console.log('현재 순번 확인 응답 본문:', queueStatusResponse.body);
-  check(queueStatusResponse, {
-    '현재 순번 확인 응답 상태는 200': (res) => res.status === 200,
-    '현재 순번 응답 문자열 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-
-  // 사용자 동작 시뮬레이션
-  sleep(1); // 1초 대기
-}
-```
 - 팝업스토어 redis 적용 전
 ![image (1)](https://github.com/user-attachments/assets/d5420f13-2aec-4c18-a604-157ba67845ab)
 
@@ -306,77 +235,6 @@ export default function () {
     - **팝업 스토어 정보 상세 조회**: 여러 데이터 요청에 대한 복원력 확인.
     - **예약 신청**: 동시다발적인 예약 생성 요청 처리 여부 확인.
   
-코드
-```javascript
-import http from 'k6/http';
-import { sleep, check } from 'k6';
-import { Trend } from 'k6/metrics';
-
-// Custom metrics
-const Response_Time = new Trend('Response_Time');
-
-export const options = {
-  stages: [
-    { duration: '1m', target: 50 }, 
-    { duration: '1m', target: 50 },
-    { duration: '1m', target: 0 },
-  ],
-};
-
-export default function () {
-  const baseUrl = 'http://west-somsom-alb-1941268033.ap-northeast-2.elb.amazonaws.com';
-
-  // 랜덤 페이지 번호 (0~19)
-  const page = Math.floor(Math.random() * 20); // 0부터 19 사이의 랜덤 값
-  const size = 50; // 한 페이지당 50개 조회
-
-  // **홈 조회**
-  const homeResponse = http.get(`${baseUrl}/api/home?page=${page}&size=${size}`);
-  Response_Time.add(homeResponse.timings.duration);
-  console.log('홈 응답 상태 코드:', homeResponse.status);
-  check(homeResponse, {
-    '홈 응답 상태는 200': (res) => res.status === 200,
-    '홈 응답 본문 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-
-  // 예약 전송을 위한 데이터
-  const memberId = `user${__VU}`; // Virtual User ID (user1, user2, ..., user500)
-  const reservationBody = JSON.stringify({
-    memberId: memberId,
-    date: '2024-12-08',
-    timeSlot: '23:00',
-    storeId: '1001',
-  });
-  const reservationHeaders = { 'Content-Type': 'application/json' };
-  // **예약 신청**
-  const reservationResponse = http.post(`${baseUrl}/api/reservation/enter`, reservationBody, { headers: reservationHeaders });
-  Response_Time.add(reservationResponse.timings.duration);
-  console.log('예약 신청 응답 상태 코드:', reservationResponse.status);
-  console.log('예약 신청 응답 본문:', reservationResponse.body);
-  check(reservationResponse, {
-    '예약 신청 응답 상태는 200': (res) => res.status === 200,
-    '예약 신청 응답 문자열 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-
-  // **현재 순번 확인**
-  const queueMemberId = `user1`;
-  const date = '2024-12-08';
-  const timeSlot = '20:00';
-  const storeId = '1001'; 
-  const queueStatusUrl = `${baseUrl}/api/reservation/queue-status?memberId=${memberId}&date=${date}&timeSlot=${timeSlot}&storeId=${storeId}`;
-  const queueStatusResponse = http.get(queueStatusUrl);
-  Response_Time.add(queueStatusResponse.timings.duration);
-  console.log('현재 순번 확인 응답 상태 코드:', queueStatusResponse.status);
-  console.log('현재 순번 확인 응답 본문:', queueStatusResponse.body);
-  check(queueStatusResponse, {
-    '현재 순번 확인 응답 상태는 200': (res) => res.status === 200,
-    '현재 순번 응답 문자열 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-
-  // 사용자 동작 시뮬레이션
-  sleep(1); // 1초 대기
-}
-```
 ![image (3)](https://github.com/user-attachments/assets/ea51a19e-98a8-42ee-972b-8aaaa8e814aa)
 - 응답 성공률: 99.98%
 - `http_req_duration` 평균 요청 시간: 31.28ms
@@ -399,117 +257,6 @@ export default function () {
     - **팝업 스토어 정보 상세 조회**: 여러 데이터 요청에 대한 복원력 확인.
     - **예약 신청**: 갑작스러운 예약 요청 폭주 시 안정성 검증.
 
-코드
-```javascript
-import http from 'k6/http';
-import { sleep, check } from 'k6';
-import { Trend } from 'k6/metrics';
-// Custom metrics
-const Response_Time = new Trend('Response_Time');
-const THRESHOLD = 8000; // 지연 시간 임계값 (밀리초 단위, 2초)
-export const options = {
-  stages: [
-    { duration: '1m', target: 5000 },
-    { duration: '1m', target: 10000 },
-    { duration: '1m', target: 0 },
-  ],
-};
-export default function () {
-  const baseUrl = 'http://west-somsom-alb-1941268033.ap-northeast-2.elb.amazonaws.com';
-
-  // **홈 조회**
-  // 랜덤 페이지 번호 (0~50)
-  const page = Math.floor(Math.random() * 50);
-  const homeResponse = http.get(`${baseUrl}/api/home?page=${page}`);
-  Response_Time.add(homeResponse.timings.duration);
-  if (homeResponse.timings.duration > THRESHOLD) {
-    console.log(`홈 조회 지연 발생: ${homeResponse.timings.duration}ms, 상태 코드: ${homeResponse.status}`);
-  }
-  const homeCheck = check(homeResponse, {
-    '홈 응답 상태는 200': (res) => res.status === 200,
-    '홈 응답 본문 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-  if (!homeCheck) {
-    console.log('홈 조회 오류: 상태 코드:', homeResponse.status, '본문:', homeResponse.body);
-  }
-
-  // **검색 API**
-  const searchName = 'Maxidex';
-  const searchLoc = encodeURIComponent('3 Declaration Road');
-  const searchResponse = http.get(`${baseUrl}/api/search?name=${searchName}&loc=${searchLoc}`);
-  Response_Time.add(searchResponse.timings.duration);
-  if (searchResponse.timings.duration > THRESHOLD) {
-    console.log(`검색 지연 발생: ${searchResponse.timings.duration}ms, 상태 코드: ${searchResponse.status}`);
-  }
-  const searchCheck = check(searchResponse, {
-    '검색 응답 상태는 200': (res) => res.status === 200,
-    '검색 응답 본문 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-  if (!searchCheck) {
-    console.log('검색 오류: 상태 코드:', searchResponse.status, '본문:', searchResponse.body);
-  }
-
-  // **상세조회 API**
-  const storeId = 2000;
-  const storeDetailResponse = http.get(`${baseUrl}/api/store/${storeId}`);
-  Response_Time.add(storeDetailResponse.timings.duration);
-  if (storeDetailResponse.timings.duration > THRESHOLD) {
-    console.log(`상세조회 지연 발생: ${storeDetailResponse.timings.duration}ms, 상태 코드: ${storeDetailResponse.status}`);
-  }
-  const storeDetailCheck = check(storeDetailResponse, {
-    '상세조회 응답 상태는 200': (res) => res.status === 200,
-    '상세조회 응답 본문 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-  if (!storeDetailCheck) {
-    console.log('상세조회 오류: 상태 코드:', storeDetailResponse.status, '본문:', storeDetailResponse.body);
-  }
-
-  // 예약 전송을 위한 데이터
-  const memberId = `user${__VU}`;
-  const reservationBody = JSON.stringify({
-    memberId: memberId,
-    date: '2024-12-08',
-    timeSlot: '24:00',
-    storeId: '1001',
-  });
-  const reservationHeaders = { 'Content-Type': 'application/json' };
-  // **예약 신청**
-  const reservationResponse = http.post(`${baseUrl}/api/reservation/enter`, reservationBody, { headers: reservationHeaders });
-  Response_Time.add(reservationResponse.timings.duration);
-  if (reservationResponse.timings.duration > THRESHOLD) {
-    console.log(`예약 신청 지연 발생: ${reservationResponse.timings.duration}ms, 상태 코드: ${reservationResponse.status}`);
-  }
-  const reservationCheck = check(reservationResponse, {
-    '예약 신청 응답 상태는 200': (res) => res.status === 200,
-    '예약 신청 응답 문자열 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-  if (!reservationCheck) {
-    console.log('예약 신청 오류: 상태 코드:', reservationResponse.status, '본문:', reservationResponse.body);
-  }
-
-  // **현재 순번 확인**
-  const queueMemberId = `user1`;
-  const date = '2024-12-08';
-  const timeSlot = '24:00';
-  const res_storeId = '1001';
-  const queueStatusUrl = `${baseUrl}/api/reservation/queue-status?memberId=${queueMemberId}&date=${date}&timeSlot=${timeSlot}&storeId=${res_storeId}`;
-  const queueStatusResponse = http.get(queueStatusUrl);
-  Response_Time.add(queueStatusResponse.timings.duration);
-  if (queueStatusResponse.timings.duration > THRESHOLD) {
-    console.log(`현재 순번 확인 지연 발생: ${queueStatusResponse.timings.duration}ms, 상태 코드: ${queueStatusResponse.status}`);
-  }
-  const queueStatusCheck = check(queueStatusResponse, {
-    '현재 순번 확인 응답 상태는 200': (res) => res.status === 200,
-    '현재 순번 응답 문자열 존재 여부 확인': (res) => res.body && res.body.trim().length > 0,
-  });
-  if (!queueStatusCheck) {
-    console.log('현재 순번 확인 오류: 상태 코드:', queueStatusResponse.status, '본문:', queueStatusResponse.body);
-  }
-
-  // 사용자 동작 시뮬레이션
-  sleep(1); // 1초 대기
-}
-```
 - Redis Pub/Sub 적용 전
 ![image (4)](https://github.com/user-attachments/assets/07ba003d-ee74-43c5-8465-fde6bf2fb35f)
 - Redis Pub/Sub 적용 후
@@ -539,10 +286,47 @@ export default function () {
 #### 3. CI/CD 파이프라인 부재
 - 빌드 파일 생성 및  Filezilla를 통한 수동 배포 진행
 - 적절한 CI/CD 파이프라인 구축 필요
-
-![아키텍처 구조도 drawio](https://github.com/user-attachments/assets/f6ec5d0e-a548-44b8-ab14-b325e36df364)
   - github action + ECR 등의 파이프라인 구축 가능
 #### 4. Auto Scaling 정책 부재
 - 정책 설정의 필요성
    - 성능 테스트 시 인스턴스의 컴퓨터 자원에 따라 결과가 다르게 나타남
    - Auto Scaling Group의 CPUUtilization을 경보로 설정한 단계 크기 정책 필요
+
+---
+
+# 개선사항 (1/30 updated)
+## 백엔드 개선
+- 검색 기능
+    - category 검색 기능인덱스 설정
+    - no offset 적용
+- 채팅 기능
+    - 웹소켓 기반 단일 서버 구조 → Redis Pub/Sub 적용
+        ⇒ 다중 서버 간 메시지 동기화 가능
+- 팝업 스토어 전체 정보 조회 기능
+    - no offset 적용
+- 예약 기능
+    - Redis Pub/Sub 적용
+        ⇒ 기존의 스케줄러 방식보다 실시간성 개선
+
+## 인프라 개선
+![아키텍처 구조도 drawio](https://github.com/user-attachments/assets/f6ec5d0e-a548-44b8-ab14-b325e36df364)
+- Route53 + ACM 적용
+- ECS 클러스터 도입
+    - CI/CD 파이프라인 구축
+      <br><img width="290" alt="image" src="https://github.com/user-attachments/assets/cc48145c-3291-47eb-bb0a-12a60424fc4c" />
+
+    - 컨테이너화
+- Bastion host → Instance connect endpoint 수정
+    - Session Manager는 비용이 많이 들어 대신 Instance connect endpoint를 도입하기로 결정
+    - Bastion host보더 더 안전하게 접근
+- CloudWatch 지표 + 경보 설정
+    - ECS 컨테이너 인스턴스(EC2)에 CloudWatch Agent 설치 및 메모리 지표 확인
+    - ECS Cluster의 CPUUtilization 지표를 통한 경보 설정
+      
+        | 경보 | 지표 | 시간 | 조건 |
+        | --- | --- | --- | --- |
+        | scale-out | ECS CPUUtilization | 1분 | 80% 이상 (최대), 2번 체크 |
+        | scale-in | ECS CPUUtilization | 10분 | 10% 이하 (평균) |
+
+- Auto Scaling 크기 조정 정책 설정
+    - CloudWatch 경보를 바탕으로 EC2 ASG, ECS Service에 단계 조정 정책 설정
