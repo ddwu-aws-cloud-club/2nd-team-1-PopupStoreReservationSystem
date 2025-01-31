@@ -316,7 +316,7 @@ https://drive.google.com/file/d/1np6pBRT7CSKuDsdFETkB0GAE_jj3KigE/view
 - Route53 + ACM 적용
 - ECS 클러스터 도입
     - CI/CD 파이프라인 구축
-      <br><img width="290" alt="image" src="https://github.com/user-attachments/assets/cc48145c-3291-47eb-bb0a-12a60424fc4c" />
+      <img width="823" alt="image" src="https://github.com/user-attachments/assets/3c14fafc-b7e3-4c1a-b877-339cb16a7f8e" />
 
     - 컨테이너화
 - Bastion host → Instance connect endpoint 수정
